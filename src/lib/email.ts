@@ -1,6 +1,6 @@
 import "server-only";
 import { createElement, type ReactElement } from "react";
-import { render } from "react-email";
+import { render } from "@react-email/render";
 import { Resend } from "resend";
 import MagicLinkEmail from "@/emails/auth/MagicLinkEmail";
 import NewLoginEmail, { type NewLoginEmailProps } from "@/emails/auth/NewLoginEmail";
