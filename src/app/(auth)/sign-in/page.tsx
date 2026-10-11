@@ -44,7 +44,15 @@ export default function SignInPage() {
   }
 
   async function handleResend() {
-    await authClient.sendVerificationEmail({ email, callbackURL: "/" });
+    const { error } = await authClient.sendVerificationEmail({ email, callbackURL: "/" });
+
+    // 429 means the resend limit in src/lib/auth.ts was hit
+    if (error) {
+      setError(error.message ?? "Could not resend the email. Please try again later.");
+      return;
+    }
+
+    setError(null);
     setResent(true);
   }
 

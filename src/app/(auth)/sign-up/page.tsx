@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
 export default function SignUpPage() {
+  const router = useRouter();
+  // Signing up also signs the person in, even before they verify their email
+  const { data: session } = authClient.useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,6 +38,11 @@ export default function SignUpPage() {
 
   async function handleGoogle() {
     await authClient.signIn.social({ provider: "google", callbackURL: "/" });
+  }
+
+  async function handleSignOut() {
+    await authClient.signOut();
+    router.push("/sign-in");
   }
 
   return (
@@ -71,6 +80,26 @@ export default function SignUpPage() {
                 <span className="font-semibold">{email}</span>. Click it to
                 activate your account.
               </p>
+
+              {/* Always give a way off this screen. With requireEmailVerification
+                  on, signing up does not sign the person in, so there is nothing
+                  to sign out of and they get a link back to sign-in instead. */}
+              {session ? (
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="mt-6 w-full rounded-xl border border-[#8C2B5C] bg-white py-3 text-sm font-medium text-[#8C2B5C] transition hover:bg-[#8C2B5C]/5"
+                >
+                  Sign out
+                </button>
+              ) : (
+                <Link
+                  href="/sign-in"
+                  className="mt-6 block w-full rounded-xl border border-[#8C2B5C] bg-white py-3 text-center text-sm font-medium text-[#8C2B5C] transition hover:bg-[#8C2B5C]/5"
+                >
+                  Back to sign in
+                </Link>
+              )}
             </div>
           ) : (
             <>
