@@ -155,7 +155,7 @@ export default function SignUpPage() {
                     placeholder="Password"
                     className="w-full rounded-xl border border-[#D9A3BD] px-3 py-3 text-sm outline-none transition focus:border-[#8C2B5C]"
                   />
-                </div>
+                </div> 
 
                 {error && <p className="text-sm text-red-600">{error}</p>}
 

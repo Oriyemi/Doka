@@ -30,7 +30,7 @@ export default function SignInPage() {
     setLoading(false);
 
     if (error) {
-      // 403 means the email exists but hasn't been verified yet
+      
       if (error.status === 403) {
         setUnverified(true);
         setError("Please verify your email before signing in.");
