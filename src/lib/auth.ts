@@ -98,6 +98,7 @@ export const auth = betterAuth({
     // and this is what makes that advice work.
     revokeSessionsOnPasswordReset: true,
   },
+  
 
   socialProviders: {
     google: {
