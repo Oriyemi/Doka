@@ -2,11 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function SignUpPage() {
+  const router = useRouter();
+  // Signing up also signs the person in, even before they verify their email
+  const { data: session } = authClient.useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -34,6 +40,11 @@ export default function SignUpPage() {
 
   async function handleGoogle() {
     await authClient.signIn.social({ provider: "google", callbackURL: "/" });
+  }
+
+  async function handleSignOut() {
+    await authClient.signOut();
+    router.push("/sign-in");
   }
 
   return (
@@ -71,6 +82,26 @@ export default function SignUpPage() {
                 <span className="font-semibold">{email}</span>. Click it to
                 activate your account.
               </p>
+
+              {/* Always give a way off this screen. With requireEmailVerification
+                  on, signing up does not sign the person in, so there is nothing
+                  to sign out of and they get a link back to sign-in instead. */}
+              {session ? (
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="mt-6 w-full rounded-xl border border-[#8C2B5C] bg-white py-3 text-sm font-medium text-[#8C2B5C] transition hover:bg-[#8C2B5C]/5"
+                >
+                  Sign out
+                </button>
+              ) : (
+                <Link
+                  href="/sign-in"
+                  className="mt-6 block w-full rounded-xl border border-[#8C2B5C] bg-white py-3 text-center text-sm font-medium text-[#8C2B5C] transition hover:bg-[#8C2B5C]/5"
+                >
+                  Back to sign in
+                </Link>
+              )}
             </div>
           ) : (
             <>
@@ -116,16 +147,27 @@ export default function SignUpPage() {
                   >
                     Password
                   </label>
-                  <input
-                    id="password"
-                    type="password"
-                    required
-                    minLength={8}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    className="w-full rounded-xl border border-[#D9A3BD] px-3 py-3 text-sm outline-none transition focus:border-[#8C2B5C]"
-                  />
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Password"
+                      className="w-full rounded-xl border border-[#D9A3BD] px-3 py-3 pr-11 text-sm outline-none transition focus:border-[#8C2B5C]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C2B5C]/70 transition hover:text-[#8C2B5C]"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
 
                 {error && <p className="text-sm text-red-600">{error}</p>}
