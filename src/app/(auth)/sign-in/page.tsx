@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { Eye, EyeOff } from "lucide-react";
 
-export default function SignInPage() {
+export default function SignInForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +26,7 @@ export default function SignInPage() {
     const { error } = await authClient.signIn.email({
       email,
       password,
-      callbackURL: "/",
+      callbackURL: "/onboarding",
     });
 
     setLoading(false);
@@ -42,13 +42,13 @@ export default function SignInPage() {
       return;
     }
 
-    router.push("/");
+    router.push("/onboarding");
   }
 
   async function handleResend() {
     const { error } = await authClient.sendVerificationEmail({
       email,
-      callbackURL: "/",
+      callbackURL: "/onboarding",
     });
 
     // 429 means the resend limit in src/lib/auth.ts was hit
@@ -64,7 +64,7 @@ export default function SignInPage() {
   }
 
   async function handleGoogle() {
-    await authClient.signIn.social({ provider: "google", callbackURL: "/" });
+    await authClient.signIn.social({ provider: "google", callbackURL: "/onboarding" });
   }
 
   return (
@@ -120,7 +120,7 @@ export default function SignInPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder="name@example.com"
                 className="w-full rounded-xl border border-[#D9A3BD] px-3 py-3 text-sm outline-none transition focus:border-[#8C2B5C]"
               />
             </div>

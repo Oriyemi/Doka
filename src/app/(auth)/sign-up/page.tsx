@@ -1,3 +1,4 @@
+// This is the Doka sign-up page, a client component that remembers the email, password, loading state, errors, whether the password is visible, and whether the verification email has been sent. Users can sign up with Google or with email and password, and the eye icon toggles the password between hidden and visible. On submit, `authClient.signUp.email` creates the account, using the part of the email before the "@" as the name since the design has no name field. If it succeeds, the page switches to a "Check your email" screen, and the `callbackURL` sends the user to `/onboarding` after they click the verification link. That screen shows a "Sign out" button if a session exists, or a "Back to sign in" link if not. The plum brand panel and form are laid out responsively, and the comment at the top saying sign-up also signs the person in is outdated because `requireEmailVerification` is on.
 "use client";
 
 import { useState } from "react";
@@ -26,7 +27,7 @@ export default function SignUpPage() {
       email,
       password,
       name: email.split("@")[0], // Better Auth requires a name; your design has no name field
-      callbackURL: "/",
+      callbackURL: "/onboarding",
     });
 
     setLoading(false);
@@ -39,7 +40,7 @@ export default function SignUpPage() {
   }
 
   async function handleGoogle() {
-    await authClient.signIn.social({ provider: "google", callbackURL: "/" });
+    await authClient.signIn.social({ provider: "google", callbackURL: "/onboarding" });
   }
 
   async function handleSignOut() {
