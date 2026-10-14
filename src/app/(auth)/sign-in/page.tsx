@@ -12,6 +12,7 @@ export default function SignInForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unverified, setUnverified] = useState(false);
   const [resent, setResent] = useState(false);
@@ -32,7 +33,6 @@ export default function SignInForm() {
     setLoading(false);
 
     if (error) {
-      // 403 means the email exists but hasn't been verified yet
       if (error.status === 403) {
         setUnverified(true);
         setError("Please verify your email before signing in.");
