@@ -1,1 +1,34 @@
-export default function Page() { return <div>TODO</div>; }
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { RolePicker } from "./role-picker";
+
+export default async function OnboardingPage() {
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (!session) redirect("/sign-in");
+  if (session.user.onboarded) redirect("/explore");
+
+  return (
+    <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#F6E8F0] px-6 py-10 md:justify-center">
+      {/* Edge circles, same motif as the sign-in brand panel */}
+      <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#8C2B5C]/10" />
+      <div className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-[#8C2B5C]/10" />
+
+      <div className="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col md:flex-none">
+        <h1 className="text-2xl font-extrabold text-[#8C2B5C] md:text-center md:text-3xl">
+          Doka<span className="text-[#8C2B5C]/60">.</span>
+        </h1>
+
+        <h2 className="mt-8 text-2xl font-extrabold text-[#2A0A1B] md:mt-10 md:text-center md:text-3xl">
+          How will you use Doka?
+        </h2>
+        <p className="mb-6 mt-1 text-xs text-gray-600 md:mb-8 md:text-center md:text-sm">
+          You can set up the rest right after this.
+        </p>
+
+        <RolePicker />
+      </div>
+    </main>
+  );
+}

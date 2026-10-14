@@ -68,9 +68,28 @@ export const auth = betterAuth({
   // DATABASE_URL. Without this line Better Auth keeps nothing between restarts.
   database: db,
 
+  // ONBOARDING: extra column on the user table. It starts false and is set to
+  // true by the server action in src/app/onboarding/actions.ts once the person
+  // has picked how they will use Doka. `input: false` means it cannot be set
+  // from the browser, only on the server.
+    user: {
+    additionalFields: {
+      onboarded: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+        input: false,
+      },
+      role: {
+        type: "string",
+        required: false,
+        input: false,
+      },
+    },
+  },
+
   emailAndPassword: {
     enabled: true,
-
     // Sign-in is blocked until the person clicks the link in the confirmation
     // email, and signing up does not sign them in. The sign-in page handles
     // the refusal (its 403 branch) and offers to resend the email. Set this to
