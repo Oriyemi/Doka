@@ -1,13 +1,16 @@
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { RolePicker } from "./role-picker";
 
-export default async function OnboardingPage() {
+async function OnboardingContent() {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session) redirect("/sign-in");
-  if (session.user.onboarded) redirect("/explore");
+  if (session.user.onboarded) {
+    redirect(session.user.role === "provider" ? "/provider" : "/explore");
+  }
 
   return (
     <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#F6E8F0] px-6 py-10 md:justify-center">
@@ -30,5 +33,13 @@ export default async function OnboardingPage() {
         <RolePicker />
       </div>
     </main>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-[#F6E8F0]" />}>
+      <OnboardingContent />
+    </Suspense>
   );
 }
