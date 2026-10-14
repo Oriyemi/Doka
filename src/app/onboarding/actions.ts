@@ -13,9 +13,10 @@ export async function completeOnboarding(choice: "provider" | "customer") {
     throw new Error("Invalid choice");
   }
 
-  await db.query('update "user" set "onboarded" = true where id = $1', [
-    session.user.id,
-  ]);
+  await db.query(
+    'update "user" set "onboarded" = true, "role" = $1 where id = $2',
+    [choice, session.user.id],
+  );
 
   redirect(choice === "provider" ? "/provider/setup" : "/explore");
 }
