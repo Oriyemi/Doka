@@ -12,7 +12,7 @@ export default function SignInForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  
   const [error, setError] = useState<string | null>(null);
   const [unverified, setUnverified] = useState(false);
   const [resent, setResent] = useState(false);
