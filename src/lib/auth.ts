@@ -72,6 +72,10 @@ export const auth = betterAuth({
   // true by the server action in src/app/onboarding/actions.ts once the person
   // has picked how they will use Doka. `input: false` means it cannot be set
   // from the browser, only on the server.
+    trustedOrigins: [
+    "http://localhost:3000",
+    "https://doka-lilac.vercel.app", 
+  ],
     user: {
     additionalFields: {
       onboarded: {
