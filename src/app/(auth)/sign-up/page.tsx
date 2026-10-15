@@ -1,3 +1,4 @@
+// This is the Doka sign-up page, a client component that remembers the email, password, loading state, errors, whether the password is visible, and whether the verification email has been sent. Users can sign up with Google or with email and password, and the eye icon toggles the password between hidden and visible. On submit, `authClient.signUp.email` creates the account, using the part of the email before the "@" as the name since the design has no name field. If it succeeds, the page switches to a "Check your email" screen, and the `callbackURL` sends the user to `/onboarding` after they click the verification link. That screen shows a "Sign out" button if a session exists, or a "Back to sign in" link if not. The plum brand panel and form are laid out responsively, and the comment at the top saying sign-up also signs the person in is outdated because `requireEmailVerification` is on.
 "use client";
 
 import { useState } from "react";
@@ -26,7 +27,7 @@ export default function SignUpPage() {
       email,
       password,
       name: email.split("@")[0], // Better Auth requires a name; your design has no name field
-      callbackURL: "/",
+      callbackURL: "/onboarding",
     });
 
     setLoading(false);
@@ -39,7 +40,7 @@ export default function SignUpPage() {
   }
 
   async function handleGoogle() {
-    await authClient.signIn.social({ provider: "google", callbackURL: "/" });
+    await authClient.signIn.social({ provider: "google", callbackURL: "/onboarding" });
   }
 
   async function handleSignOut() {
@@ -155,7 +156,7 @@ export default function SignUpPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Password"
-                      className="w-full rounded-xl border border-[#D9A3BD] px-3 py-3 pr-11 text-sm outline-none transition focus:border-[#8C2B5C]"
+                      className="w-full rounded-xl border border-[#D9A3BD] py-3 pl-3 pr-11 text-sm outline-none transition focus:border-[#8C2B5C]"
                     />
                     <button
                       type="button"
@@ -163,9 +164,13 @@ export default function SignUpPage() {
                       aria-label={
                         showPassword ? "Hide password" : "Show password"
                       }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C2B5C]/70 transition hover:text-[#8C2B5C]"
+                      className="absolute inset-y-0 right-0 flex items-center px-3 text-[#8C2B5C]/70 transition hover:text-[#8C2B5C]"
                     >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
                     </button>
                   </div>
                 </div>
