@@ -28,7 +28,6 @@ I already have an ID verification upload action called `uploadId` that:
    - Do not automatically approve identity based only on an AI name match.
    - Do not automatically reject a person because of spelling variations or an AI error.
    - Do not change the provider to verified until the required review and approval process is completed.
-
 6. **Update the database appropriately.** Inspect my existing schema before proposing database changes. Reuse existing verification fields where appropriate, and explain any migration needed before adding new fields. Store only the minimum necessary information, such as the extracted name, comparison outcome, and review status. Never store the raw ID image or sensitive extracted data in application logs.
 
 7. **Preserve privacy and security.** My `id-cards` bucket is private. Do not create public URLs or expose identity images to customers. Ensure only authorized server-side code and designated reviewers can access the images. Do not assume Supabase Storage is protected simply because the bucket is private; inspect its access policies too.
