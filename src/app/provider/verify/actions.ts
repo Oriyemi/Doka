@@ -1,3 +1,4 @@
+// This page verifies Doka providers by checking their login, validating their ID photo (JPG, PNG, or WebP under 4 MB), and uploading it to Supabase Storage. It saves the image path in PostgreSQL, marks verification as pending, and attempts to clean up uploaded or previous files when needed. The id-cards bucket is private, helping protect sensitive ID photos from public access.
 "use server";
 
 import { headers } from "next/headers";
@@ -42,6 +43,8 @@ export async function uploadId(
   // Path starts with the user id so each provider's files stay separate
   const path = `${session.user.id}/${crypto.randomUUID()}.${ext}`;
 
+  // The id-cards bucket must be private in Supabase Storage.
+  // Do not create or use public URLs for identity documents.
   const { error } = await supabase.storage
     .from("id-cards")
     .upload(path, Buffer.from(await file.arrayBuffer()), {
@@ -53,14 +56,36 @@ export async function uploadId(
     return { error: "Upload failed. Try again." };
   }
 
-  await db.query(
-    "UPDATE store SET id_image_path = $1, verification_status = 'pending' WHERE id = $2",
-    [path, store.id],
-  );
+  // If saving the path to PostgreSQL fails, remove the new upload
+  // so the file is not left behind without a database record.
+  try {
+    await db.query(
+      "UPDATE store SET id_image_path = $1, verification_status = 'pending' WHERE id = $2",
+      [path, store.id],
+    );
+  } catch (dbError) {
+    console.error("[uploadId] Database update failed:", dbError);
+
+    const { error: cleanupError } = await supabase.storage
+      .from("id-cards")
+      .remove([path]);
+
+    if (cleanupError) {
+      console.error("[uploadId] Failed to remove uploaded photo:", cleanupError);
+    }
+
+    return { error: "Could not save your ID photo. Please try again." };
+  }
 
   // Remove the previous photo if they are re-uploading
   if (store.id_image_path) {
-    await supabase.storage.from("id-cards").remove([store.id_image_path]);
+    const { error: removeError } = await supabase.storage
+      .from("id-cards")
+      .remove([store.id_image_path]);
+
+    if (removeError) {
+      console.error("[uploadId] Failed to remove previous photo:", removeError);
+    }
   }
 
   redirect("/provider/dashboard");
