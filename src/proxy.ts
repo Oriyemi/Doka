@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 
 function roleHome(role?: string | null) {
-  return role === "provider" ? "/provider" : "/explore";
+  return role === "provider" ? "/provider/set-up" : "/explore";
 }
 
 // Cookie check first (cheap), then the real session to read onboarded and role.

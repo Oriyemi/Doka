@@ -22,7 +22,7 @@ export async function completeOnboarding(choice: "provider" | "customer") {
   );
 
   // if provider is true setup your store page , if not if it a customer go to explore to view the stores or the main dashboard 
-  redirect(choice === "provider" ? "/provider/setup" : "/explore");
+  redirect(choice === "provider" ? "/provider/set-up" : "/explore");
 }
 
 // This is the server action that runs when someone clicks Continue on the onboarding page. It saves their choice and sends them to the right place.
