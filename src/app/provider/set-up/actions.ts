@@ -1,4 +1,7 @@
-"use server";
+// what this page does , provider submits the form (busines name , link, location services etc), it checks the user - must be signed in and have choosen the provider role ,validate the form-check that the info is acceptable or correct,save to postgreSQL - insert the store into the database, redirect to verification- go to /provider/verify to verify with id card.
+
+
+"use server";// use server  is server actions- communicate with db
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -29,9 +32,11 @@ export async function createStore(
   const service = String(formData.get("service") ?? "").trim();
   const deliveryType = String(formData.get("deliveryType") ?? "");
 
+  // validate the value
   if (name.length < 2 || name.length > 60)
     return { error: "Enter your business name (2 to 60 characters)." };
-  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length < 3 || slug.length > 40)
+//  regex lowercase a-z. num-0-9, hypens
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length < 3 || slug.length > 40) 
     return { error: "Store link: 3 to 40 letters, numbers or single hyphens." };
   if (RESERVED_SLUGS.includes(slug))
     return { error: "That store link is not available. Try another." };
@@ -40,7 +45,7 @@ export async function createStore(
   if (!["in_store", "home", "both"].includes(deliveryType))
     return { error: "Choose where you serve clients." };
 
-  // 3. Save
+  // 3. Save. INSERT-It's an SQL command that adds a new row to a database table.$1,$2 These are SQL parameter placeholders.
   try {
     await db.query(
       `INSERT INTO store (owner_id, slug, name, location, service, delivery_type)
