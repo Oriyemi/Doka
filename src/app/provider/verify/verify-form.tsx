@@ -1,43 +1,298 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
+import {
+  ShieldCheck,
+  Upload,
+  Lock,
+  X,
+  ArrowRight,
+  FileImage,
+  Eye,
+  EyeOff,
+  User,
+} from "lucide-react";
 import { uploadId } from "./actions";
+
+const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
+const ID_TYPES = ["Voter's card", "Driver's licence", "NIN slip", "Passport"];
+
+const RULES = [
+  { icon: Eye, text: "All four corners and every word are visible" },
+  { icon: EyeOff, text: "No glare, blur or cropped edges" },
+  { icon: ShieldCheck, text: "The name matches the full name you enter above" },
+];
+
+const wrap =
+  "flex items-center gap-3 rounded-2xl border border-[#E4C7D6] bg-[#FDF8FB] px-5 transition focus-within:border-[#8c2d53] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#8c2d53]/10";
+const bare =
+  "w-full bg-transparent py-4 text-base text-[#2B0F20] outline-none placeholder:text-[#B796A8]";
+const iconCls = "h-[18px] w-[18px] shrink-0 text-[#8c2d53]";
+
+function formatSize(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function VerifyForm() {
   const [state, action, pending] = useActionState(uploadId, {});
 
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [fullName, setFullName] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  // Build and clean up the preview URL for the chosen image
+  useEffect(() => {
+    if (!file) {
+      setPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  function pick(files: FileList | null) {
+    const next = files?.[0];
+    if (!next) return;
+
+    if (!ACCEPTED.includes(next.type)) {
+      setLocalError("Use a JPG, PNG or WebP photo of your ID.");
+      return;
+    }
+
+    setLocalError(null);
+    setFile(next);
+
+    // Keep the real input in sync so drag and drop files are submitted too
+    if (inputRef.current) {
+      const dt = new DataTransfer();
+      dt.items.add(next);
+      inputRef.current.files = dt.files;
+    }
+  }
+
+  function clear() {
+    setFile(null);
+    setLocalError(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  // Submit manually instead of using action={action}.
+  // React 19 resets the form after an action runs, which would clear the file
+  // input while our preview still showed the photo.
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!fullName.trim()) {
+      setLocalError("Enter your full name as it appears on your ID.");
+      return;
+    }
+    if (!file) {
+      setLocalError("Choose a photo of your ID first.");
+      return;
+    }
+
+    setLocalError(null);
+    const formData = new FormData(e.currentTarget);
+    startTransition(() => action(formData));
+  }
+
+  const error = localError ?? state.error;
+
   return (
-    <main className="mx-auto max-w-xl p-8">
-      <form action={action} className="space-y-5 rounded-3xl bg-white p-8">
-        <h1 className="text-3xl font-extrabold text-[#2B0F20]">Verify your store</h1>
-        <p className="text-[#6B4A5C]">
-          Upload a clear photo of a government ID (voter's card, driver's licence,
-          NIN slip or passport). The name on it must match your account name. It is
-          only used to verify you and is never shown to clients.
+    <main className="relative min-h-screen overflow-hidden bg-[#F6E6F0]">
+      {/* page-level motif: edge circles */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute -right-28 -top-28 h-80 w-80 rounded-full bg-primary/10" />
+        <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/10" />
+        <div className="absolute -bottom-32 -left-28 h-96 w-96 rounded-full bg-primary/10" />
+        <div className="absolute -bottom-10 -left-8 h-44 w-44 rounded-full border border-primary/20" />
+      </div>
+
+      <div className="relative mx-auto max-w-2xl px-5 py-10 sm:px-6 lg:py-14">
+        <p className="mb-6 text-center text-3xl font-extrabold tracking-tight text-[#4A1230]">
+          Doka<span className="text-primary">.</span>
         </p>
 
-        <input
-          type="file"
-          name="idImage"
-          accept="image/jpeg,image/png,image/webp"
-          required
-          className="block w-full rounded-2xl border border-[#C99AB5] p-4"
-        />
-
-        {state.error && <p className="text-red-600">{state.error}</p>}
-
-        <button
-          disabled={pending}
-          className="w-full rounded-2xl bg-[#8E2B5C] py-4 font-semibold text-white disabled:opacity-60"
+        <form
+          onSubmit={onSubmit}
+          noValidate
+          className="relative space-y-7 overflow-hidden rounded-4xl bg-white p-7 shadow-xl shadow-primary/10 sm:p-10"
         >
-          {pending ? "Uploading..." : "Upload ID"}
-        </button>
+          {/* corner motif on the card */}
+          <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-[#F6E6F0]" />
+          <div aria-hidden className="pointer-events-none absolute -right-4 -top-4 h-20 w-20 rounded-full bg-[#EBC9DB]" />
 
-        <Link href="/provider/dashboard" className="block text-center text-[#6B4A5C] underline">
-          Skip for now
-        </Link>
-      </form>
+          <div className="relative">
+            <span className="inline-block rounded-full bg-[#F6E6F0] px-3 py-1 text-xs font-semibold text-primary">
+              Step 2 · Verification
+            </span>
+            <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-[#2B0F20]">
+              Verify your store
+            </h1>
+            <p className="mt-2 text-[#6B4A5C]">
+              Upload a clear photo of a government ID so clients can trust your store.
+            </p>
+          </div>
+
+          {/* full name, compared against the name on the ID */}
+          <label className="relative block space-y-2">
+            <span className="text-sm font-semibold text-[#2B0F20]">Full name</span>
+            <div className={wrap}>
+              <User className={iconCls} />
+              <input
+                name="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="e.g. Amara Chioma Okafor"
+                autoComplete="name"
+                className={bare}
+              />
+            </div>
+            <span className="block text-sm text-[#6B4A5C]">
+              Enter your name exactly as it is written on your ID.
+            </span>
+          </label>
+
+          {/* accepted ID types */}
+          <div className="relative space-y-3">
+            <span className="text-sm font-semibold text-[#2B0F20]">Accepted IDs</span>
+            <div className="flex flex-wrap gap-2">
+              {ID_TYPES.map((t) => (
+                <span
+                  key={t}
+                  className="rounded-full border border-[#E4C7D6] bg-[#FDF8FB] px-3.5 py-1.5 text-sm font-medium text-[#2B0F20]"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* upload area */}
+          <div className="relative space-y-3">
+            <span className="text-sm font-semibold text-[#2B0F20]">Photo of your ID</span>
+
+            <input
+              ref={inputRef}
+              id="idImage"
+              type="file"
+              name="idImage"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => pick(e.target.files)}
+              className="sr-only"
+            />
+
+            {!file ? (
+              <label
+                htmlFor="idImage"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragging(true);
+                }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragging(false);
+                  pick(e.dataTransfer.files);
+                }}
+                className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-10 text-center transition focus-within:ring-4 focus-within:ring-primary/10 ${
+                  dragging
+                    ? "border-primary bg-[#F6E6F0]"
+                    : "border-[#E4C7D6] bg-[#FDF8FB] hover:border-primary/50"
+                }`}
+              >
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F6E6F0] text-primary">
+                  <Upload className="h-6 w-6" />
+                </span>
+                <span className="font-semibold text-[#2B0F20]">
+                  Tap to choose a photo, or drop it here
+                </span>
+                <span className="text-sm text-[#6B4A5C]">JPG, PNG or WebP</span>
+              </label>
+            ) : (
+              <div className="flex items-center gap-4 rounded-2xl border-2 border-primary bg-[#FDF8FB] p-3">
+                <div className="h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-[#F6E6F0]">
+                  {preview && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={preview} alt="Preview of your ID" className="h-full w-full object-cover" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-2 font-semibold text-[#2B0F20]">
+                    <FileImage className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="truncate">{file.name}</span>
+                  </p>
+                  <p className="mt-0.5 text-sm text-[#6B4A5C]">{formatSize(file.size)}</p>
+                  <label
+                    htmlFor="idImage"
+                    className="mt-1 inline-block cursor-pointer text-sm font-semibold text-primary underline underline-offset-2"
+                  >
+                    Choose a different photo
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={clear}
+                  aria-label="Remove photo"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#6B4A5C] transition hover:bg-[#F6E6F0] hover:text-primary"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* photo checklist */}
+          <ul className="relative space-y-2.5 rounded-2xl bg-[#FDF8FB] p-5">
+            {RULES.map((r) => (
+              <li key={r.text} className="flex items-center gap-3 text-sm text-[#2B0F20]">
+                <r.icon className="h-4.5 w-4.5 shrink-0 text-primary" />
+                {r.text}
+              </li>
+            ))}
+          </ul>
+
+          {/* privacy note */}
+          <p className="relative flex items-start gap-3 text-sm text-[#6B4A5C]">
+            <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            Your ID is only used to verify you. It is never shown to clients.
+          </p>
+
+          {error && (
+            <p role="alert" className="relative rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+              {error}
+            </p>
+          )}
+
+          <div className="relative space-y-4">
+            <button
+              disabled={pending}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-base font-semibold text-white shadow-lg shadow-primary/30 transition hover:bg-[#7a2548] active:scale-[0.99] disabled:opacity-60"
+            >
+              {pending ? (
+                "Verifying..."
+              ) : (
+                <>
+                  Upload ID <ArrowRight className="h-4.5 w-4.5" />
+                </>
+              )}
+            </button>
+
+            <Link
+              href="/provider/dashboard"
+              className="block text-center text-sm font-medium text-[#6B4A5C] underline underline-offset-2 transition hover:text-primary"
+            >
+              Skip for now
+            </Link>
+          </div>
+        </form>
+      </div>
     </main>
   );
 }
