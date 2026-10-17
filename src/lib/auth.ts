@@ -89,6 +89,13 @@ export const auth = betterAuth({
         required: false,
         input: false,
       },
+      verificationStatus: {
+        type: "string",
+        required: false,
+        defaultValue: "unverified",
+        input: false,
+        fieldName: "verification_status",
+      },
     },
   },
 
