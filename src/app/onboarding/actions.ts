@@ -5,24 +5,32 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-export async function completeOnboarding(choice: "provider" | "customer") {
-  // The function the role picker calls with either "provider" or "customer".
+export async function completeOnboarding(
+  choice: "provider" | "customer",
+  rawName: string,
+): Promise<{ error: string }> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
 
-  // : is the choice valid? did hey choose provider or customer 
-  if (choice !== "provider" && choice !== "customer") {
-    throw new Error("Invalid choice");
+  // Onboarding runs once. Without this, anyone signed in could call the
+  // action again and change their role.
+  if (session.user.onboarded) {
+    redirect(session.user.role === "provider" ? "/provider/dashboard" : "/explore");
   }
 
-  // save it on database 
+  if (choice !== "provider" && choice !== "customer") {
+    return { error: "Choose how you'll use Doka." };
+  }
+
+  const name = String(rawName ?? "").trim().replace(/\s+/g, " ");
+  if (name.length < 2 || name.length > 60) {
+    return { error: "Enter your full name (2 to 60 characters)." };
+  }
+
   await db.query(
-    'update "user" set "onboarded" = true, "role" = $1 where id = $2',
-    [choice, session.user.id],
+    'update "user" set "onboarded" = true, "role" = $1, "name" = $2 where id = $3 and "onboarded" = false',
+    [choice, name, session.user.id],
   );
 
-  // if provider is true setup your store page , if not if it a customer go to explore to view the stores or the main dashboard 
   redirect(choice === "provider" ? "/provider/set-up" : "/explore");
 }
-
-// This is the server action that runs when someone clicks Continue on the onboarding page. It saves their choice and sends them to the right place.

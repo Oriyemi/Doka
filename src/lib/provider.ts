@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { cache } from "react";
 
 export type Store = {
   id: string;
@@ -27,7 +28,7 @@ export const fmt = (d: Date) =>
     timeZone: "Africa/Lagos",
   }).format(d);
 
-export async function getProviderStore(): Promise<Store> {
+export const getProviderStore = cache(async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
 
@@ -37,4 +38,4 @@ export async function getProviderStore(): Promise<Store> {
   if (!rows[0]) redirect("/provider/set-up");
 
   return rows[0] as Store;
-}
+});

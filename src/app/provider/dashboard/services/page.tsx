@@ -1,5 +1,8 @@
+import { Suspense } from "react";
+import { Trash2 } from "lucide-react";
 import { db } from "@/lib/db";
 import { getProviderStore } from "@/lib/provider";
+import Spinner from "@/components/spinner";
 import { removeService } from "./actions";
 import ServiceForm from "./service-form";
 
@@ -20,14 +23,7 @@ const duration = (m: number) =>
       ? `${Math.floor(m / 60)} hr ${m % 60} min`
       : `${m} min`;
 
-export default async function ServicesPage() {
-  const store = await getProviderStore();
-  const { rows } = await db.query<Service>(
-    `SELECT id, name, price_naira, duration_min, deposit_naira
-     FROM service WHERE store_id = $1 AND active ORDER BY created_at`,
-    [store.id],
-  );
-
+export default function ServicesPage() {
   return (
     <div className="space-y-6">
       <div>
@@ -50,39 +46,63 @@ export default async function ServicesPage() {
             </p>
           </div>
 
-          {rows.length === 0 && (
-            <p className="text-[#6B4A5C]">No services yet. Add your first one.</p>
-          )}
-
-          {rows.map((s) => (
-            <div
-              key={s.id}
-              className="flex items-start justify-between gap-4 rounded-2xl border border-[#C99AB5] p-4"
-            >
-              <div>
-                <p className="font-bold text-[#2B0F20]">{s.name}</p>
-                <p className="text-sm text-[#6B4A5C]">
-                  {duration(s.duration_min)} ·{" "}
-                  {s.deposit_naira
-                    ? `₦${NAIRA.format(s.deposit_naira)} deposit`
-                    : "No deposit"}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-[#2B0F20]">
-                  ₦{NAIRA.format(s.price_naira)}
-                </p>
-                <form action={removeService}>
-                  <input type="hidden" name="id" value={s.id} />
-                  <button className="text-sm text-[#6B4A5C] underline hover:text-primary">
-                    Remove
-                  </button>
-                </form>
-              </div>
-            </div>
-          ))}
+          <Suspense
+            fallback={
+              <Spinner fullScreen={false} label="Loading services..." />
+            }
+          >
+            <ServicesList />
+          </Suspense>
         </section>
       </div>
+    </div>
+  );
+}
+
+async function ServicesList() {
+  const store = await getProviderStore();
+  const { rows } = await db.query<Service>(
+    `SELECT id, name, price_naira, duration_min, deposit_naira
+     FROM service WHERE store_id = $1 AND active ORDER BY created_at`,
+    [store.id],
+  );
+
+  if (rows.length === 0) {
+    return <p className="text-[#6B4A5C]">No services yet. Add your first one.</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {rows.map((s) => (
+        <div
+          key={s.id}
+          className="flex items-start justify-between gap-4 rounded-2xl border border-[#C99AB5] p-4"
+        >
+          <div className="min-w-0">
+            <p className="wrap-break-words font-bold text-[#2B0F20]">
+              {s.name}
+            </p>
+            <p className="text-sm text-[#6B4A5C]">
+              {duration(s.duration_min)} ·{" "}
+              {s.deposit_naira
+                ? `₦${NAIRA.format(s.deposit_naira)} deposit`
+                : "No deposit"}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <p className="font-bold text-[#2B0F20]">
+              ₦{NAIRA.format(s.price_naira)}
+            </p>
+            <form action={removeService}>
+              <input type="hidden" name="id" value={s.id} />
+              <button className="inline-flex items-center gap-1 text-sm text-[#6B4A5C] underline hover:text-primary">
+                <Trash2 size={14} aria-hidden="true" />
+                Remove
+              </button>
+            </form>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

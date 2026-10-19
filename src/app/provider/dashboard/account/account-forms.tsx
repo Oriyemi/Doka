@@ -2,6 +2,15 @@
 
 import { useActionState, useRef, useState } from "react";
 import {
+  CircleAlert,
+  CircleCheck,
+  KeyRound,
+  LoaderCircle,
+  Save,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
+import {
   btnDanger,
   btnOutline,
   btnPrimary,
@@ -24,8 +33,9 @@ function Message({ state }: { state: State }) {
     return (
       <p
         role="alert"
-        className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
+        className="flex items-center gap-2 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
       >
+        <CircleAlert size={16} className="shrink-0" aria-hidden="true" />
         {state.error}
       </p>
     );
@@ -33,12 +43,22 @@ function Message({ state }: { state: State }) {
     return (
       <p
         role="status"
-        className="rounded-2xl bg-[#F6E6F0] px-4 py-3 text-sm font-medium text-[#6B1F45]"
+        className="flex items-center gap-2 rounded-2xl bg-[#F6E6F0] px-4 py-3 text-sm font-medium text-[#6B1F45]"
       >
+        <CircleCheck size={16} className="shrink-0" aria-hidden="true" />
         {state.ok}
       </p>
     );
   return null;
+}
+
+function Pending({ text }: { text: string }) {
+  return (
+    <>
+      <LoaderCircle size={18} className="animate-spin" aria-hidden="true" />
+      {text}
+    </>
+  );
 }
 
 export function ProfileForm({ name, email }: { name: string; email: string }) {
@@ -54,7 +74,12 @@ export function ProfileForm({ name, email }: { name: string; email: string }) {
 
       <label className="block space-y-2">
         <span className={label}>Full name</span>
-        <input name="name" defaultValue={name} autoComplete="name" className={input} />
+        <input
+          name="name"
+          defaultValue={name}
+          autoComplete="name"
+          className={input}
+        />
       </label>
 
       <label className="block space-y-2">
@@ -65,14 +90,25 @@ export function ProfileForm({ name, email }: { name: string; email: string }) {
           className={`${input} cursor-not-allowed bg-[#FBF3F8] text-[#6B4A5C]`}
         />
         <span className="block text-xs text-[#6B4A5C]">
-          Your email is tied to how you sign in, so it can&apos;t be changed here.
+          Your email is tied to how you sign in, so it can&apos;t be changed
+          here.
         </span>
       </label>
 
       <Message state={state} />
 
-      <button disabled={pending} className={`${btnPrimary} w-full sm:w-auto sm:px-10`}>
-        {pending ? "Saving..." : "Save changes"}
+      <button
+        disabled={pending}
+        className={`${btnPrimary} inline-flex w-full items-center justify-center gap-2 sm:w-auto sm:px-10`}
+      >
+        {pending ? (
+          <Pending text="Saving..." />
+        ) : (
+          <>
+            <Save size={18} aria-hidden="true" />
+            Save changes
+          </>
+        )}
       </button>
     </form>
   );
@@ -112,8 +148,18 @@ export function PasswordForm() {
 
       <Message state={state} />
 
-      <button disabled={pending} className={`${btnOutline} w-full sm:w-auto sm:px-10`}>
-        {pending ? "Updating..." : "Update password"}
+      <button
+        disabled={pending}
+        className={`${btnOutline} inline-flex w-full items-center justify-center gap-2 sm:w-auto sm:px-10`}
+      >
+        {pending ? (
+          <Pending text="Updating..." />
+        ) : (
+          <>
+            <KeyRound size={18} aria-hidden="true" />
+            Update password
+          </>
+        )}
       </button>
     </form>
   );
@@ -136,16 +182,17 @@ export function DeleteAccount() {
           Delete account
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-[#6B4A5C]">
-          Permanently removes your account, store and services. This can&apos;t be
-          undone.
+          Permanently removes your account, store and services. This
+          can&apos;t be undone.
         </p>
       </div>
 
       <button
         type="button"
         onClick={() => ref.current?.showModal()}
-        className={`${btnDanger} w-full sm:w-auto sm:px-8`}
+        className={`${btnDanger} inline-flex w-full items-center justify-center gap-2 sm:w-auto sm:px-8`}
       >
+        <Trash2 size={18} aria-hidden="true" />
         Delete account
       </button>
 
@@ -155,9 +202,14 @@ export function DeleteAccount() {
         className="m-auto w-[min(92vw,28rem)] rounded-3xl p-6 shadow-2xl backdrop:bg-[#2B0F20]/50 backdrop:backdrop-blur-sm sm:p-8"
       >
         <form action={action} className="space-y-4">
-          <h3 className="font-(family-name:--font-display) text-2xl font-semibold tracking-tight text-[#2B0F20]">
-            Delete your account?
-          </h3>
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+              <TriangleAlert size={20} aria-hidden="true" />
+            </span>
+            <h3 className="font-(family-name:--font-display) text-2xl font-semibold tracking-tight text-[#2B0F20]">
+              Delete your account?
+            </h3>
+          </div>
           <p className="text-sm leading-relaxed text-[#6B4A5C]">
             Clients will no longer be able to find your store. Type{" "}
             <strong className="text-[#2B0F20]">DELETE</strong> to confirm.
@@ -180,9 +232,16 @@ export function DeleteAccount() {
             </button>
             <button
               disabled={pending || typed.trim() !== "DELETE"}
-              className={btnDanger}
+              className={`${btnDanger} inline-flex items-center justify-center gap-2`}
             >
-              {pending ? "Deleting..." : "Delete forever"}
+              {pending ? (
+                <Pending text="Deleting..." />
+              ) : (
+                <>
+                  <Trash2 size={18} aria-hidden="true" />
+                  Delete forever
+                </>
+              )}
             </button>
           </div>
         </form>

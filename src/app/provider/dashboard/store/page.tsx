@@ -1,6 +1,16 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import {
+  BadgeCheck,
+  Clock,
+  MapPin,
+  Truck,
+  Wallet,
+  Scissors,
+} from "lucide-react";
 import { db } from "@/lib/db";
 import { DELIVERY_LABEL, getProviderStore } from "@/lib/provider";
+import Spinner from "@/components/spinner";
 import CopyLink from "../copy-link";
 import PageHeader from "../page-header";
 import { btnOutline, card, cardTitle, display } from "../ui";
@@ -22,7 +32,23 @@ const duration = (m: number) =>
       ? `${Math.floor(m / 60)} hr ${m % 60} min`
       : `${m} min`;
 
-export default async function StorePage() {
+export default function StorePage() {
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Store"
+        subtitle="This is how clients see your store."
+      />
+      <Suspense
+        fallback={<Spinner fullScreen={false} label="Loading store..." />}
+      >
+        <StoreContent />
+      </Suspense>
+    </div>
+  );
+}
+
+async function StoreContent() {
   const store = await getProviderStore();
   const verified = store.verification_status === "verified";
   const initial = store.name.trim()[0]?.toUpperCase() ?? "D";
@@ -35,11 +61,6 @@ export default async function StorePage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <PageHeader
-        title="Store"
-        subtitle="This is how clients see your store."
-      />
-
       <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-[#EBD3E0]/70 shadow-[0_1px_2px_rgba(111,29,68,0.06),0_16px_40px_-20px_rgba(111,29,68,0.28)]">
         {/* Banner */}
         <div className="h-24 bg-linear-to-br from-[#6F1D44] via-[#8E2B5C] to-[#C46A94] sm:h-32" />
@@ -62,9 +83,7 @@ export default async function StorePage() {
                   </h2>
                   {verified ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-[#F6E6F0] px-2.5 py-1 text-xs font-semibold text-[#6B1F45]">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M5 12.5l4.5 4.5L19 7.5" />
-                      </svg>
+                      <BadgeCheck size={14} aria-hidden="true" />
                       Verified
                     </span>
                   ) : (
@@ -87,16 +106,15 @@ export default async function StorePage() {
 
           <div className="mt-5 flex flex-wrap gap-2 text-sm font-medium text-[#4A3340]">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F6E6F0] px-3 py-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" />
-                <circle cx="12" cy="10" r="2.5" />
-              </svg>
+              <MapPin size={14} aria-hidden="true" />
               {store.location}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F6E6F0] px-3 py-1.5">
+              <Truck size={14} aria-hidden="true" />
               {DELIVERY_LABEL[store.delivery_type]}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F6E6F0] px-3 py-1.5">
+              <Scissors size={14} aria-hidden="true" />
               {rows.length} service{rows.length === 1 ? "" : "s"}
             </span>
           </div>
@@ -106,7 +124,10 @@ export default async function StorePage() {
       <section className={`${card} space-y-5`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className={cardTitle}>Services</h2>
-          <Link href="/provider/dashboard/services" className={`${btnOutline} min-h-11 px-5`}>
+          <Link
+            href="/provider/dashboard/services"
+            className={`${btnOutline} min-h-11 px-5`}
+          >
             Manage services
           </Link>
         </div>
@@ -132,15 +153,19 @@ export default async function StorePage() {
                   <p className="min-w-0 wrap-break-words font-semibold text-[#2B0F20]">
                     {s.name}
                   </p>
-                  <p className={`${display} shrink-0 text-xl font-semibold text-[#6F1D44]`}>
+                  <p
+                    className={`${display} shrink-0 text-xl font-semibold text-[#6F1D44]`}
+                  >
                     ₦{NAIRA.format(s.price_naira)}
                   </p>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-[#6B4A5C]">
-                  <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-[#EBD3E0]">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 ring-1 ring-[#EBD3E0]">
+                    <Clock size={12} aria-hidden="true" />
                     {duration(s.duration_min)}
                   </span>
-                  <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-[#EBD3E0]">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 ring-1 ring-[#EBD3E0]">
+                    <Wallet size={12} aria-hidden="true" />
                     {s.deposit_naira
                       ? `₦${NAIRA.format(s.deposit_naira)} deposit`
                       : "No deposit"}

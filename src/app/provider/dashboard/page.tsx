@@ -1,6 +1,14 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import {
+  ArrowRight,
+  CalendarDays,
+  MessageSquare,
+  ShieldAlert,
+} from "lucide-react";
 import { db } from "@/lib/db";
 import { getProviderStore } from "@/lib/provider";
+import Spinner from "@/components/spinner";
 import PageHeader from "./page-header";
 import Stars from "./overview";
 import StoreCard from "./store-card";
@@ -17,12 +25,27 @@ type Latest = {
 };
 
 const TZ = "Africa/Lagos";
-const dayFmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", timeZone: TZ });
-const monFmt = new Intl.DateTimeFormat("en-GB", { month: "short", timeZone: TZ });
-const timeFmt = new Intl.DateTimeFormat("en-GB", { timeStyle: "short", timeZone: TZ });
+const dayFmt = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  timeZone: TZ,
+});
+const monFmt = new Intl.DateTimeFormat("en-GB", {
+  month: "short",
+  timeZone: TZ,
+});
+const timeFmt = new Intl.DateTimeFormat("en-GB", {
+  timeStyle: "short",
+  timeZone: TZ,
+});
 
 const initialsOf = (name: string) =>
-  name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase() || "?";
 
 function Stat({
   label,
@@ -46,20 +69,59 @@ function Stat({
           : "bg-white text-[#2B0F20] ring-[#EBD3E0]/70 shadow-[0_1px_2px_rgba(111,29,68,0.06),0_16px_40px_-20px_rgba(111,29,68,0.28)]"
       }`}
     >
-      <p className={`text-xs font-medium sm:text-sm ${highlight ? "text-white/80" : "text-[#6B4A5C]"}`}>
+      <p
+        className={`text-xs font-medium sm:text-sm ${
+          highlight ? "text-white/80" : "text-[#6B4A5C]"
+        }`}
+      >
         {label}
       </p>
-      <p className={`${display} mt-3 text-4xl font-semibold tracking-tight sm:text-5xl`}>
+      <p
+        className={`${display} mt-3 text-4xl font-semibold tracking-tight sm:text-5xl`}
+      >
         {value}
       </p>
-      <p className={`mt-1 text-xs ${highlight ? "text-white/70" : "text-[#6B4A5C]"}`}>
+      <p
+        className={`mt-1 text-xs ${
+          highlight ? "text-white/70" : "text-[#6B4A5C]"
+        }`}
+      >
         {note ?? "\u00A0"}
       </p>
     </Link>
   );
 }
 
-export default async function OverviewPage() {
+function SeeAll({ href }: { href: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1 text-sm font-semibold text-[#8E2B5C] underline underline-offset-4"
+    >
+      See all
+      <ArrowRight size={14} aria-hidden="true" />
+    </Link>
+  );
+}
+
+export default function OverviewPage() {
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Overview"
+        subtitle="Here's what's happening at your store."
+      />
+
+      <Suspense
+        fallback={<Spinner fullScreen={false} label="Loading overview..." />}
+      >
+        <OverviewContent />
+      </Suspense>
+    </div>
+  );
+}
+
+async function OverviewContent() {
   const store = await getProviderStore();
 
   const [counts, rating, next, latest] = await Promise.all([
@@ -102,15 +164,16 @@ export default async function OverviewPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <PageHeader
-        title="Overview"
-        subtitle={`Here's what's happening at ${store.name}.`}
-      />
-
       {!verified && (
         <div className="flex flex-col gap-3 rounded-3xl bg-[#FFF6E3] p-5 ring-1 ring-[#F2DDA8] sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm leading-relaxed text-[#6B4A00]">
-            Your store isn&apos;t verified yet, so it won&apos;t show on Explore.
+          <p className="flex items-start gap-3 text-sm leading-relaxed text-[#6B4A00]">
+            <ShieldAlert
+              size={20}
+              className="mt-0.5 shrink-0"
+              aria-hidden="true"
+            />
+            Your store isn&apos;t verified yet, so it won&apos;t show on
+            Explore.
           </p>
           <Link
             href="/provider/verify"
@@ -153,21 +216,32 @@ export default async function OverviewPage() {
         <section className={card}>
           <div className="flex items-center justify-between gap-4">
             <h2 className={cardTitle}>Next bookings</h2>
-            <Link href="/provider/dashboard/bookings?tab=upcoming" className="text-sm font-semibold text-[#8E2B5C] underline underline-offset-4">
-              See all
-            </Link>
+            <SeeAll href="/provider/dashboard/bookings?tab=upcoming" />
           </div>
 
           {next.rows.length === 0 ? (
-            <p className="mt-4 rounded-2xl bg-[#FBF3F8] p-5 text-sm text-[#6B4A5C]">
-              No upcoming bookings yet. Share your store link to get your first one.
-            </p>
+            <div className="mt-4 flex items-start gap-3 rounded-2xl bg-[#FBF3F8] p-5 text-sm text-[#6B4A5C]">
+              <CalendarDays
+                size={18}
+                className="mt-0.5 shrink-0"
+                aria-hidden="true"
+              />
+              <p>
+                No upcoming bookings yet. Share your store link to get your
+                first one.
+              </p>
+            </div>
           ) : (
             <ul className="mt-4 space-y-3">
               {next.rows.map((b) => (
-                <li key={b.id} className="flex items-center gap-4 rounded-2xl bg-[#FBF3F8] p-3 sm:p-4">
+                <li
+                  key={b.id}
+                  className="flex items-center gap-4 rounded-2xl bg-[#FBF3F8] p-3 sm:p-4"
+                >
                   <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-white text-[#6F1D44] ring-1 ring-[#EBD3E0]">
-                    <span className={`${display} text-xl font-semibold leading-none`}>
+                    <span
+                      className={`${display} text-xl font-semibold leading-none`}
+                    >
                       {dayFmt.format(b.start_at)}
                     </span>
                     <span className="mt-0.5 text-[11px] font-semibold">
@@ -175,7 +249,9 @@ export default async function OverviewPage() {
                     </span>
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-[#2B0F20]">{b.customer}</p>
+                    <p className="truncate font-semibold text-[#2B0F20]">
+                      {b.customer}
+                    </p>
                     <p className="truncate text-sm text-[#6B4A5C]">
                       {b.service} · {timeFmt.format(b.start_at)}
                     </p>
@@ -189,15 +265,18 @@ export default async function OverviewPage() {
         <section className={card}>
           <div className="flex items-center justify-between gap-4">
             <h2 className={cardTitle}>Latest reviews</h2>
-            <Link href="/provider/dashboard/reviews" className="text-sm font-semibold text-[#8E2B5C] underline underline-offset-4">
-              See all
-            </Link>
+            <SeeAll href="/provider/dashboard/reviews" />
           </div>
 
           {latest.rows.length === 0 ? (
-            <p className="mt-4 rounded-2xl bg-[#FBF3F8] p-5 text-sm text-[#6B4A5C]">
-              Reviews appear here after clients complete a booking.
-            </p>
+            <div className="mt-4 flex items-start gap-3 rounded-2xl bg-[#FBF3F8] p-5 text-sm text-[#6B4A5C]">
+              <MessageSquare
+                size={18}
+                className="mt-0.5 shrink-0"
+                aria-hidden="true"
+              />
+              <p>Reviews appear here after clients complete a booking.</p>
+            </div>
           ) : (
             <ul className="mt-4 space-y-3">
               {latest.rows.map((x) => (
@@ -207,7 +286,9 @@ export default async function OverviewPage() {
                       {initialsOf(x.customer)}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-[#2B0F20]">{x.customer}</p>
+                      <p className="truncate font-semibold text-[#2B0F20]">
+                        {x.customer}
+                      </p>
                       <Stars value={x.rating} />
                     </div>
                   </div>

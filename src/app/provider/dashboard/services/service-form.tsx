@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CircleAlert, CircleCheck, LoaderCircle, Plus } from "lucide-react";
 import { btnPrimary, card, cardTitle, input } from "../ui";
 import { addService } from "./actions";
 
@@ -23,13 +24,13 @@ export default function ServiceForm() {
     const form = e.currentTarget;
     setPending(true);
     setSuccess(false);
+    setError(null);
     const res = await addService(new FormData(form));
     setPending(false);
 
     if (res.error) {
       setError(res.error); // keep what they typed
     } else {
-      setError(null);
       setSuccess(true);
       form.reset();
       setDelivery("in_store");
@@ -114,22 +115,37 @@ export default function ServiceForm() {
       {error && (
         <p
           role="alert"
-          className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
+          className="flex items-center gap-2 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
         >
+          <CircleAlert size={16} className="shrink-0" aria-hidden="true" />
           {error}
         </p>
       )}
       {success && (
         <p
           role="status"
-          className="rounded-2xl bg-[#F6E6F0] px-4 py-3 text-sm font-medium text-[#6B1F45]"
+          className="flex items-center gap-2 rounded-2xl bg-[#F6E6F0] px-4 py-3 text-sm font-medium text-[#6B1F45]"
         >
+          <CircleCheck size={16} className="shrink-0" aria-hidden="true" />
           Service added.
         </p>
       )}
 
-      <button disabled={pending} className={`${btnPrimary} w-full`}>
-        {pending ? "Adding..." : "Add service"}
+      <button
+        disabled={pending}
+        className={`${btnPrimary} inline-flex w-full items-center justify-center gap-2`}
+      >
+        {pending ? (
+          <>
+            <LoaderCircle size={18} className="animate-spin" aria-hidden="true" />
+            Adding...
+          </>
+        ) : (
+          <>
+            <Plus size={18} aria-hidden="true" />
+            Add service
+          </>
+        )}
       </button>
     </form>
   );

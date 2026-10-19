@@ -1,6 +1,9 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight, MessageSquareText } from "lucide-react";
 import { db } from "@/lib/db";
 import { getProviderStore } from "@/lib/provider";
+import Spinner from "@/components/spinner";
 import PageHeader from "../page-header";
 import Stars from "../overview";
 import { btnOutline, btnPrimary, card, cardTitle, display } from "../ui";
@@ -19,9 +22,36 @@ type Row = {
 const date = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium" });
 
 const initialsOf = (name: string) =>
-  name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase() || "?";
 
-export default async function ReviewsPage({
+export default function ReviewsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Reviews"
+        subtitle="Clients can review you after a completed booking."
+      />
+
+      <Suspense
+        fallback={<Spinner fullScreen={false} label="Loading reviews..." />}
+      >
+        <ReviewsContent searchParams={searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function ReviewsContent({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string }>;
@@ -60,14 +90,11 @@ export default async function ReviewsPage({
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <PageHeader
-        title="Reviews"
-        subtitle="Clients can review you after a completed booking."
-      />
-
       <section className="grid gap-6 overflow-hidden rounded-3xl bg-white p-5 ring-1 ring-[#EBD3E0]/70 shadow-[0_1px_2px_rgba(111,29,68,0.06),0_16px_40px_-20px_rgba(111,29,68,0.28)] sm:p-8 md:grid-cols-[14rem_1fr] md:items-center md:gap-10">
         <div className="rounded-2xl bg-[#6F1D44] p-6 text-center text-white">
-          <p className={`${display} text-6xl font-semibold tracking-tight sm:text-7xl`}>
+          <p
+            className={`${display} text-6xl font-semibold tracking-tight sm:text-7xl`}
+          >
             {avg ?? "–"}
           </p>
           {avg && (
@@ -85,7 +112,10 @@ export default async function ReviewsPage({
             const count = counts.get(n) ?? 0;
             const pct = total ? (count / total) * 100 : 0;
             return (
-              <div key={n} className="flex items-center gap-3 text-sm text-[#4A3340]">
+              <div
+                key={n}
+                className="flex items-center gap-3 text-sm text-[#4A3340]"
+              >
                 <span className="w-12 shrink-0 font-medium">{n} star</span>
                 <div className="h-3 flex-1 overflow-hidden rounded-full bg-[#F6E6F0]">
                   <div
@@ -93,7 +123,9 @@ export default async function ReviewsPage({
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <span className="w-8 shrink-0 text-right text-[#6B4A5C]">{count}</span>
+                <span className="w-8 shrink-0 text-right text-[#6B4A5C]">
+                  {count}
+                </span>
               </div>
             );
           })}
@@ -111,9 +143,16 @@ export default async function ReviewsPage({
         </div>
 
         {rows.length === 0 ? (
-          <p className="mt-5 rounded-2xl bg-[#FBF3F8] p-6 text-sm leading-relaxed text-[#6B4A5C]">
-            No reviews yet. They show up here after clients finish a booking.
-          </p>
+          <div className="mt-5 flex items-start gap-3 rounded-2xl bg-[#FBF3F8] p-6 text-sm leading-relaxed text-[#6B4A5C]">
+            <MessageSquareText
+              size={18}
+              className="mt-0.5 shrink-0"
+              aria-hidden="true"
+            />
+            <p>
+              No reviews yet. They show up here after clients finish a booking.
+            </p>
+          </div>
         ) : (
           <ul className="mt-5 space-y-3">
             {rows.map((r) => (
@@ -124,7 +163,9 @@ export default async function ReviewsPage({
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                      <p className="truncate font-semibold text-[#2B0F20]">{r.customer}</p>
+                      <p className="truncate font-semibold text-[#2B0F20]">
+                        {r.customer}
+                      </p>
                       <Stars value={r.rating} />
                     </div>
                     <p className="text-sm text-[#6B4A5C]">
@@ -148,15 +189,23 @@ export default async function ReviewsPage({
             className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-between"
           >
             {page > 1 ? (
-              <Link href={`?page=${page - 1}`} className={btnOutline}>
+              <Link
+                href={`?page=${page - 1}`}
+                className={`${btnOutline} inline-flex items-center justify-center gap-2`}
+              >
+                <ChevronLeft size={16} aria-hidden="true" />
                 Previous
               </Link>
             ) : (
               <span />
             )}
             {page < pages ? (
-              <Link href={`?page=${page + 1}`} className={btnPrimary}>
+              <Link
+                href={`?page=${page + 1}`}
+                className={`${btnPrimary} inline-flex items-center justify-center gap-2`}
+              >
                 Next
+                <ChevronRight size={16} aria-hidden="true" />
               </Link>
             ) : (
               <span />
