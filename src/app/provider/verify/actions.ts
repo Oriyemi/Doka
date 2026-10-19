@@ -62,7 +62,7 @@ async function readId(file: File): Promise<IdReading> {
 }
 
 // ---------- name comparison: our code decides, not Gemini ----------
-
+// The tokens() function cleans a person's name by removing accents, converting letters to lowercase, removing numbers and punctuation, splitting the name into individual words, and removing empty words.
 function tokens(name: string) {
   return name
     .normalize("NFD")
