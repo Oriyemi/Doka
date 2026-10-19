@@ -9,12 +9,16 @@ async function OnboardingContent() {
 
   if (!session) redirect("/sign-in");
   if (session.user.onboarded) {
-    redirect(session.user.role === "provider" ? "/provider" : "/explore");
+    redirect(session.user.role === "provider" ? "/provider/dashboard" : "/explore");
   }
+
+  // Email sign-ups get their email prefix as a temporary name, so leave the
+  // field empty for them. Google users already have a real name.
+  const emailPrefix = session.user.email.split("@")[0];
+  const defaultName = session.user.name === emailPrefix ? "" : session.user.name;
 
   return (
     <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#F6E8F0] px-6 py-10 md:justify-center">
-      {/* Edge circles, same motif as the sign-in brand panel */}
       <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#8C2B5C]/10" />
       <div className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-[#8C2B5C]/10" />
 
@@ -24,13 +28,13 @@ async function OnboardingContent() {
         </h1>
 
         <h2 className="mt-8 text-2xl font-extrabold text-[#2A0A1B] md:mt-10 md:text-center md:text-3xl">
-          How will you use Doka?
+          Welcome! Let&apos;s get you set up
         </h2>
         <p className="mb-6 mt-1 text-xs text-gray-600 md:mb-8 md:text-center md:text-sm">
           You can set up the rest right after this.
         </p>
 
-        <RolePicker />
+        <RolePicker defaultName={defaultName} />
       </div>
     </main>
   );

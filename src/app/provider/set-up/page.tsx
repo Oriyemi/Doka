@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import StoreForm from "./store-form";
+import Spinner from "@/components/spinner";
 
 async function SetUpContent() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -24,8 +25,8 @@ async function SetUpContent() {
 
 export default function SetUpPage() {
   return (
-    <Suspense fallback={<p className="p-8">Loading store setup...</p>}>
-      <SetUpContent />
-    </Suspense>
+   <Suspense fallback={<Spinner label="Loading store setup..." />}>
+  <SetUpContent />
+</Suspense>
   );
 }

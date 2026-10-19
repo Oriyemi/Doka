@@ -36,7 +36,10 @@ async function readId(file: File): Promise<IdReading> {
     contents: [
       {
         role: "user",
-        parts: [{ text: PROMPT }, { inlineData: { mimeType: file.type, data } }],
+        parts: [
+          { text: PROMPT },
+          { inlineData: { mimeType: file.type, data } },
+        ],
       },
     ],
     config: {
@@ -59,7 +62,7 @@ async function readId(file: File): Promise<IdReading> {
 }
 
 // ---------- name comparison: our code decides, not Gemini ----------
-
+// The tokens() function cleans a person's name by removing accents, converting letters to lowercase, removing numbers and punctuation, splitting the name into individual words, and removing empty words.
 function tokens(name: string) {
   return name
     .normalize("NFD")
@@ -138,33 +141,41 @@ export async function uploadId(
     reading = await readId(file);
   } catch {
     return {
-      error: "We couldn't check your ID right now. Please try again in a moment.",
+      error:
+        "We couldn't check your ID right now. Please try again in a moment.",
     };
   }
 
   if (!reading.isGovernmentId) {
     return {
-      error: "That doesn't look like a government ID. Upload a photo of the ID itself.",
+      error:
+        "That doesn't look like a government ID. Upload a photo of the ID itself.",
     };
   }
   if (!reading.isReadable) {
     return {
-      error: "We couldn't read that photo. Retake it in good light with all four corners visible.",
+      error:
+        "We couldn't read that photo. Retake it in good light with all four corners visible.",
     };
   }
 
   const result = compareNames(fullName, reading.fullName);
   if (result === "mismatch") {
-    return { error: "The name on your ID doesn't match the full name you entered." };
+    return {
+      error: "The name on your ID doesn't match the full name you entered.",
+    };
   }
 
   const status = result === "verified" ? "verified" : "pending_review";
 
   try {
-    await db.query('UPDATE "user" SET verification_status = $1 WHERE id = $2', [
-      status,
-      session.user.id,
-    ]);
+    await db.query(
+      `UPDATE store
+   SET verification_status = $1,
+       verified_at = CASE WHEN $1 = 'verified' THEN now() END
+   WHERE owner_id = $2`,
+      [status, session.user.id],
+    );
   } catch {
     return { error: "We couldn't save your verification. Please try again." };
   }
