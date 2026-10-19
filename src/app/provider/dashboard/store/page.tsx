@@ -42,7 +42,7 @@ export default async function StorePage() {
 
       <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-[#EBD3E0]/70 shadow-[0_1px_2px_rgba(111,29,68,0.06),0_16px_40px_-20px_rgba(111,29,68,0.28)]">
         {/* Banner */}
-        <div className="h-24 bg-gradient-to-br from-[#6F1D44] via-[#8E2B5C] to-[#C46A94] sm:h-32" />
+        <div className="h-24 bg-linear-to-br from-[#6F1D44] via-[#8E2B5C] to-[#C46A94] sm:h-32" />
 
         <div className="px-5 pb-6 sm:px-8 sm:pb-8">
           <div className="-mt-10 flex flex-col gap-5 sm:-mt-12 md:flex-row md:items-end md:justify-between">
@@ -56,7 +56,7 @@ export default async function StorePage() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2
-                    className={`${display} break-words text-2xl font-semibold tracking-tight text-[#2B0F20] sm:text-3xl`}
+                    className={`${display} wrap-break-words text-2xl font-semibold tracking-tight text-[#2B0F20] sm:text-3xl`}
                   >
                     {store.name}
                   </h2>
@@ -129,7 +129,7 @@ export default async function StorePage() {
                 className="rounded-2xl bg-[#FBF3F8] p-4 ring-1 ring-[#EBD3E0]/60 sm:p-5"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <p className="min-w-0 break-words font-semibold text-[#2B0F20]">
+                  <p className="min-w-0 wrap-break-words font-semibold text-[#2B0F20]">
                     {s.name}
                   </p>
                   <p className={`${display} shrink-0 text-xl font-semibold text-[#6F1D44]`}>

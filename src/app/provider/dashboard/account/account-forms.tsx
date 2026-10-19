@@ -132,7 +132,7 @@ export function DeleteAccount() {
   return (
     <section className="flex flex-col gap-5 rounded-3xl bg-white p-5 ring-1 ring-red-200 shadow-[0_16px_40px_-24px_rgba(185,28,28,0.35)] sm:flex-row sm:items-center sm:justify-between sm:p-7">
       <div className="max-w-xl">
-        <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-tight text-red-600 sm:text-2xl">
+        <h2 className="font-(family-name:--font-display) text-xl font-semibold tracking-tight text-red-600 sm:text-2xl">
           Delete account
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-[#6B4A5C]">
@@ -155,7 +155,7 @@ export function DeleteAccount() {
         className="m-auto w-[min(92vw,28rem)] rounded-3xl p-6 shadow-2xl backdrop:bg-[#2B0F20]/50 backdrop:backdrop-blur-sm sm:p-8"
       >
         <form action={action} className="space-y-4">
-          <h3 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-[#2B0F20]">
+          <h3 className="font-(family-name:--font-display) text-2xl font-semibold tracking-tight text-[#2B0F20]">
             Delete your account?
           </h3>
           <p className="text-sm leading-relaxed text-[#6B4A5C]">

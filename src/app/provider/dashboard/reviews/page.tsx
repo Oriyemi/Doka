@@ -71,7 +71,7 @@ export default async function ReviewsPage({
             {avg ?? "–"}
           </p>
           {avg && (
-            <div className="mt-2 text-lg [&_*]:!text-[#F6E6F0] [&_span_span]:!text-white/30">
+            <div className="mt-2 text-lg **:text-[#F6E6F0]! [&_span_span]:text-white/30!">
               <Stars value={Number(avg)} />
             </div>
           )}
@@ -89,7 +89,7 @@ export default async function ReviewsPage({
                 <span className="w-12 shrink-0 font-medium">{n} star</span>
                 <div className="h-3 flex-1 overflow-hidden rounded-full bg-[#F6E6F0]">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#8E2B5C] to-[#C46A94]"
+                    className="h-full rounded-full bg-linear-to-r from-[#8E2B5C] to-[#C46A94]"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -131,7 +131,7 @@ export default async function ReviewsPage({
                       {r.service} · {date.format(r.created_at)}
                     </p>
                     {r.comment && (
-                      <p className="mt-3 break-words leading-relaxed text-[#2B0F20]">
+                      <p className="mt-3 wrap-break-words leading-relaxed text-[#2B0F20]">
                         {r.comment}
                       </p>
                     )}

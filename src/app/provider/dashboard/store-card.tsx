@@ -21,7 +21,7 @@ export default function StoreCard({ store }: { store: Store }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <p
-              className={`${display} break-words text-xl font-semibold tracking-tight text-[#2B0F20] sm:text-2xl`}
+              className={`${display} wrap-break-words text-xl font-semibold tracking-tight text-[#2B0F20] sm:text-2xl`}
             >
               {store.name}
             </p>
