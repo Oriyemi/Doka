@@ -51,7 +51,7 @@ const SplashScreen = ({ finishLoading }: SplashScreenProps) => {
   return (
     <div className="fixed inset-0 z-50 flex h-dvh flex-col items-center justify-center overflow-hidden bg-[#701E47]">
       {/* Decorative circle from the design */}
-      <div className="pointer-events-none absolute -bottom-32 -right-24 h-80 w-80 rounded-full bg-[#8C2B5C] md:h-[28rem] md:w-[28rem]" />
+      <div className="pointer-events-none absolute -bottom-32 -right-24 h-80 w-80 rounded-full bg-[#8C2B5C] md:h-112 md:w-md" />
 
       <div className="relative flex flex-col items-center px-6 text-center">
         <h1

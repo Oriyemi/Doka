@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import VerifyForm from "./verify-form";
+import Spinner from "@/components/spinner";
 
 async function VerifyContent() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -26,7 +27,7 @@ async function VerifyContent() {
 
 export default function VerifyPage() {
   return (
-    <Suspense fallback={<p className="p-8">Loading verification...</p>}>
+    <Suspense fallback={<Spinner label="Loading verification...."/>}>
       <VerifyContent />
     </Suspense>
   );
