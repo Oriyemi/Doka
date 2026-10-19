@@ -2,6 +2,7 @@ import "server-only";
 import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { emailOTP, magicLink } from "better-auth/plugins";
+import { nextCookies } from "better-auth/next-js";
 import { after, userAgentFromString } from "next/server";
 import { db } from "@/lib/db";
 import {
@@ -282,5 +283,7 @@ export const auth = betterAuth({
         sendInBackground(() => sendOtpEmail(email, { otp, purpose: type }));
       },
     }),
+
+    nextCookies(), // keep this last
   ],
 });
