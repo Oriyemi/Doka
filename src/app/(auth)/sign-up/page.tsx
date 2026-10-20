@@ -98,7 +98,7 @@ export default function SignInForm() {
       <section className="flex justify-center px-6 py-8 md:items-center md:px-10">
         <div className="w-full max-w-sm">
           <h2 className="text-2xl font-extrabold text-[#2A0A1B]">
-            Welcome back
+           Create an account
           </h2>
 
           <button
@@ -204,10 +204,10 @@ export default function SignInForm() {
                     className="animate-spin"
                     aria-hidden="true"
                   />
-                  Signing in...
+                  Signing up...
                 </>
               ) : (
-                "Sign in"
+                "Sign up"
               )}
             </button>
           </form>
@@ -215,7 +215,7 @@ export default function SignInForm() {
           <p className="mt-4 text-center text-xs text-gray-600">
             Don&apos;t have an account?{" "}
             <Link href="/sign-up" className="font-bold text-[#8C2B5C]">
-              Create one
+              Sign in
             </Link>
           </p>
         </div>
