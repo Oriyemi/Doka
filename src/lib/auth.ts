@@ -114,6 +114,7 @@ export const auth = betterAuth({
 
     revokeSessionsOnPasswordReset: true,
   },
+  
 
   socialProviders: {
     google: {
