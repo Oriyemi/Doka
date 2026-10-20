@@ -96,7 +96,7 @@ async function StoreContent() {
                   )}
                 </div>
                 <p className="mt-1 break-all text-sm text-[#6B4A5C]">
-                  doka.app/{store.slug}
+                 doka-lilac.vercel.app/{store.slug}
                 </p>
               </div>
             </div>

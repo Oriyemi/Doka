@@ -39,3 +39,20 @@ export const getProviderStore = cache(async () => {
 
   return rows[0] as Store;
 });
+export const RESERVED_SLUGS = new Set([
+  "api",
+  "provider",
+  "dashboard",
+  "onboarding",
+  "bookings",
+  "profile",
+  "store-setup",
+  "sign-in",
+  "sign-up",
+  "explore",
+  "about",
+  "settings",
+  "admin",
+  "login",
+  "logout",
+]);

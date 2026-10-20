@@ -1,20 +1,14 @@
-// what this page does , provider submits the form (busines name , link, location services etc), it checks the user - must be signed in and have choosen the provider role ,validate the form-check that the info is acceptable or correct,save to postgreSQL - insert the store into the database, redirect to verification- go to /provider/verify to verify with id card.
+// what this page does: provider submits the form (business name, link, location, services etc), it checks the user (must be signed in and have chosen the provider role), validates the form, saves to PostgreSQL (inserts the store into the database), then redirects to /provider/verify to verify with an ID card.
 
-
-"use server";// use server  is server actions- communicate with db
+"use server"; // server actions: they run on the server and talk to the db
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { RESERVED_SLUGS } from "@/lib/provider";
 
 export type StoreFormState = { error?: string };
-
-// Links that would clash with real pages, since stores live at doka.app/<slug>
-const RESERVED_SLUGS = [
-  "provider", "explore", "sign-in", "sign-up", "onboarding",
-  "dashboard", "bookings", "profile", "api", "admin", "settings",
-];
 
 export async function createStore(
   _prev: StoreFormState,
@@ -32,20 +26,27 @@ export async function createStore(
   const service = String(formData.get("service") ?? "").trim();
   const deliveryType = String(formData.get("deliveryType") ?? "");
 
-  // validate the value
   if (name.length < 2 || name.length > 60)
     return { error: "Enter your business name (2 to 60 characters)." };
-//  regex lowercase a-z. num-0-9, hypens
-  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length < 3 || slug.length > 40) 
+
+  // regex: lowercase a-z, numbers 0-9, single hyphens between words
+  if (
+    !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) ||
+    slug.length < 3 ||
+    slug.length > 40
+  )
     return { error: "Store link: 3 to 40 letters, numbers or single hyphens." };
-  if (RESERVED_SLUGS.includes(slug))
+
+  // Links that would clash with real pages, since stores live at /<slug>
+  if (RESERVED_SLUGS.has(slug))
     return { error: "That store link is not available. Try another." };
+
   if (location.length < 2) return { error: "Enter your city and area." };
   if (service.length < 2) return { error: "Enter the service you render." };
   if (!["in_store", "home", "both"].includes(deliveryType))
     return { error: "Choose where you serve clients." };
 
-  // 3. Save. INSERT-It's an SQL command that adds a new row to a database table.$1,$2 These are SQL parameter placeholders.
+  // 3. Save. INSERT adds a new row to the store table; $1..$6 are placeholders.
   try {
     await db.query(
       `INSERT INTO store (owner_id, slug, name, location, service, delivery_type)
@@ -66,5 +67,5 @@ export async function createStore(
   }
 
   // 4. Next step (redirect must stay outside try/catch)
- redirect("/provider/verify");
+  redirect("/provider/verify");
 }
