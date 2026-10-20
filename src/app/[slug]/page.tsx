@@ -1,22 +1,27 @@
-import { cache } from "react";
-import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgeCheck, Clock, MapPin, Truck, Wallet, Scissors } from "lucide-react";
+import {
+  BadgeCheck,
+  Clock,
+  MapPin,
+  Truck,
+  Wallet,
+  Scissors,
+} from "lucide-react";
 import { db } from "@/lib/db";
-import { DELIVERY_LABEL } from "@/lib/provider";
-import { btnPrimary, card, cardTitle, display } from "@/app/provider/dashboard/ui";
+import { DELIVERY_LABEL, type Store } from "@/lib/provider";
+import Spinner from "@/components/spinner";
+import {
+  btnPrimary,
+  card,
+  cardTitle,
+  display,
+} from "@/app/provider/dashboard/ui";
+
+export const metadata = { title: "Store | Doka" };
 
 const NAIRA = new Intl.NumberFormat("en-NG");
-
-type Store = {
-  id: string;
-  name: string;
-  slug: string;
-  location: string;
-  delivery_type: keyof typeof DELIVERY_LABEL;
-  verification_status: string;
-};
 
 type Service = {
   id: string;
@@ -33,37 +38,36 @@ const duration = (m: number) =>
       ? `${Math.floor(m / 60)} hr ${m % 60} min`
       : `${m} min`;
 
-// cache() so generateMetadata and the page share one query
-const getStoreBySlug = cache(async (slug: string) => {
-  const { rows } = await db.query<Store>(
-    `SELECT id, name, slug, location, delivery_type, verification_status
-     FROM store WHERE lower(slug) = lower($1) LIMIT 1`,
-    [slug],
-  );
-  return rows[0] ?? null;
-});
-
-export async function generateMetadata({
+// No await here, so nothing dynamic runs outside Suspense.
+export default function PublicStorePage({
   params,
 }: {
   params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const store = await getStoreBySlug(slug);
-  if (!store) return { title: "Store not found | Doka" };
-  return {
-    title: `${store.name} | Doka`,
-    description: `Book ${store.name} in ${store.location} on Doka.`,
-  };
+}) {
+  return (
+    <main className="mx-auto max-w-4xl px-4 py-6 sm:py-10">
+      <Suspense
+        fallback={<Spinner fullScreen={false} label="Loading store..." />}
+      >
+        <StoreContent params={params} />
+      </Suspense>
+    </main>
+  );
 }
 
-export default async function PublicStorePage({
+async function StoreContent({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const store = await getStoreBySlug(slug);
+
+  const { rows: storeRows } = await db.query<Store>(
+    `SELECT id, name, slug, location, delivery_type, verification_status
+     FROM store WHERE lower(slug) = lower($1) LIMIT 1`,
+    [slug],
+  );
+  const store = storeRows[0];
   if (!store) notFound();
 
   const verified = store.verification_status === "verified";
@@ -76,7 +80,7 @@ export default async function PublicStorePage({
   );
 
   return (
-    <main className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:space-y-8 sm:py-10">
+    <div className="space-y-6 sm:space-y-8">
       <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-[#EBD3E0]/70">
         <div className="h-24 bg-linear-to-br from-[#6F1D44] via-[#8E2B5C] to-[#C46A94] sm:h-32" />
         <div className="px-5 pb-6 sm:px-8 sm:pb-8">
@@ -135,8 +139,12 @@ export default async function PublicStorePage({
                 className="rounded-2xl bg-[#FBF3F8] p-4 ring-1 ring-[#EBD3E0]/60 sm:p-5"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <p className="min-w-0 font-semibold text-[#2B0F20]">{s.name}</p>
-                  <p className={`${display} shrink-0 text-xl font-semibold text-[#6F1D44]`}>
+                  <p className="min-w-0 font-semibold text-[#2B0F20]">
+                    {s.name}
+                  </p>
+                  <p
+                    className={`${display} shrink-0 text-xl font-semibold text-[#6F1D44]`}
+                  >
                     ₦{NAIRA.format(s.price_naira)}
                   </p>
                 </div>
@@ -153,7 +161,7 @@ export default async function PublicStorePage({
                   </span>
                 </div>
                 <Link
-                  href={`/${store.slug}/book/${s.id}`}
+                  href={`/book/${s.id}`}
                   className={`${btnPrimary} mt-4 w-full`}
                 >
                   Book
@@ -163,6 +171,6 @@ export default async function PublicStorePage({
           </ul>
         )}
       </section>
-    </main>
+    </div>
   );
 }
