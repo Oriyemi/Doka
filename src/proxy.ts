@@ -10,6 +10,14 @@ function roleHome(role?: string | null) {
 // NOT the security boundary: every page and server action still checks the
 // real session itself.
 export async function proxy(request: NextRequest) {
+  // Server Action requests carry a "next-action" header. Let them through:
+  // a redirect here returns HTML to the action, and the client throws
+  // "An unexpected response was received from the server."
+  // Each action checks the session itself (uploadId does).
+  if (request.headers.has("next-action")) {
+    return NextResponse.next();
+  }
+
   const { pathname } = request.nextUrl;
 
   const signIn = new URL("/sign-in", request.url);

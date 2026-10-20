@@ -17,6 +17,7 @@ import { uploadId } from "./actions";
 
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
 const ID_TYPES = ["Voter's card", "Driver's licence", "NIN slip", "Passport"];
+const MAX_UPLOAD_BYTES = 3 * 1024 * 1024; // keep in sync with MAX_BYTES in actions.ts
 
 const RULES = [
   { icon: Eye, text: "All four corners and every word are visible" },
@@ -35,6 +36,42 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// Shrinks a phone photo before upload so the request stays under the
+// Next.js / Vercel body limits. Falls back to the original file on any failure.
+async function compress(
+  file: File,
+  maxSide = 1800,
+  quality = 0.8,
+): Promise<File> {
+  try {
+    const bitmap = await createImageBitmap(file, {
+      imageOrientation: "from-image",
+    });
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", quality),
+    );
+    if (!blob) return file;
+
+    // Only use the compressed version if it is actually smaller
+    if (blob.size >= file.size) return file;
+
+    return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", {
+      type: "image/jpeg",
+    });
+  } catch {
+    return file;
+  }
+}
+
 export default function VerifyForm() {
   const [state, action, pending] = useActionState(uploadId, {});
 
@@ -44,6 +81,7 @@ export default function VerifyForm() {
   const [preview, setPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
 
   // Build and clean up the preview URL for the chosen image
   useEffect(() => {
@@ -56,19 +94,29 @@ export default function VerifyForm() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  function pick(files: FileList | null) {
-    const next = files?.[0];
-    if (!next) return;
+  async function pick(files: FileList | null) {
+    const raw = files?.[0];
+    if (!raw) return;
 
-    if (!ACCEPTED.includes(next.type)) {
+    if (!ACCEPTED.includes(raw.type)) {
       setLocalError("Use a JPG, PNG or WebP photo of your ID.");
+      return;
+    }
+
+    setCompressing(true);
+    const next = await compress(raw);
+    setCompressing(false);
+
+    if (next.size > MAX_UPLOAD_BYTES) {
+      setLocalError("That photo is too large. Try a smaller one.");
+      if (inputRef.current) inputRef.current.value = "";
       return;
     }
 
     setLocalError(null);
     setFile(next);
 
-    // Keep the real input in sync so drag and drop files are submitted too
+    // Keep the real input in sync so the compressed file is what gets submitted
     if (inputRef.current) {
       const dt = new DataTransfer();
       dt.items.add(next);
@@ -87,6 +135,8 @@ export default function VerifyForm() {
   // input while our preview still showed the photo.
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (compressing) return;
 
     if (!fullName.trim()) {
       setLocalError("Enter your full name as it appears on your ID.");
@@ -211,7 +261,9 @@ export default function VerifyForm() {
                   <Upload className="h-6 w-6" />
                 </span>
                 <span className="font-semibold text-[#2B0F20]">
-                  Tap to choose a photo, or drop it here
+                  {compressing
+                    ? "Preparing your photo..."
+                    : "Tap to choose a photo, or drop it here"}
                 </span>
                 <span className="text-sm text-[#6B4A5C]">JPG, PNG or WebP</span>
               </label>
@@ -272,11 +324,13 @@ export default function VerifyForm() {
 
           <div className="relative space-y-4">
             <button
-              disabled={pending}
+              disabled={pending || compressing}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-base font-semibold text-white shadow-lg shadow-primary/30 transition hover:bg-[#7a2548] active:scale-[0.99] disabled:opacity-60"
             >
               {pending ? (
                 "Verifying..."
+              ) : compressing ? (
+                "Preparing photo..."
               ) : (
                 <>
                   Upload ID <ArrowRight className="h-4.5 w-4.5" />

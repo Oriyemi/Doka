@@ -11,7 +11,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 type State = { error?: string };
 
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
-const MAX_BYTES = 4 * 1024 * 1024;
+const MAX_BYTES = 3 * 1024 * 1024;
 
 const PROMPT = `You are reading a photo of a Nigerian government ID
 (voter's card, driver's licence, NIN slip or passport).
