@@ -140,7 +140,7 @@ export default function SignInForm() {
                   Password
                 </label>
                 <Link
-                  href="/forgot-password"
+                  href="/forget-password"
                   className="text-xs font-semibold text-[#8C2B5C]"
                 >
                   Forgot password?
@@ -214,7 +214,7 @@ export default function SignInForm() {
 
           <p className="mt-4 text-center text-xs text-gray-600">
             Don&apos;t have an account?{" "}
-            <Link href="/sign-up" className="font-bold text-[#8C2B5C]">
+            <Link href="/sign-in" className="font-bold text-[#8C2B5C]">
               Sign in
             </Link>
           </p>
