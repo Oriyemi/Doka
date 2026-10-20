@@ -213,7 +213,7 @@ export default function SignInForm() {
           </form>
 
           <p className="mt-4 text-center text-xs text-gray-600">
-            Don&apos;t have an account?{" "}
+            If you have an account?{" "}
             <Link href="/sign-in" className="font-bold text-[#8C2B5C]">
               Sign in
             </Link>
