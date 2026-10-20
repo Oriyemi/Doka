@@ -59,14 +59,14 @@ export function RolePicker({ defaultName }: { defaultName: string }) {
         <RoleCard
           icon={Store}
           title="I want to take bookings"
-          description="Open your store, list services and manage bookings."
+          description="Business."
           selected={choice === "provider"}
           onSelect={() => setChoice("provider")}
         />
         <RoleCard
           icon={CalendarCheck}
           title="I want to book a service"
-          description="Find providers and book in a few clicks."
+          description="Customer."
           selected={choice === "customer"}
           onSelect={() => setChoice("customer")}
         />
