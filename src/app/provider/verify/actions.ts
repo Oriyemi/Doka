@@ -43,7 +43,7 @@ async function readId(file: File): Promise<IdReading> {
   const data = arrayBufferToBase64(arrayBuffer);
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.8-flash",
     contents: [
       {
         role: "user",
