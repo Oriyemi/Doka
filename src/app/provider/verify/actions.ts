@@ -27,12 +27,23 @@ type IdReading = {
   fullName: string;
 };
 
+// Web-safe converter ensuring zero runtime dependence on Node.js global Buffer core
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 // Ask Gemini to read the ID and return JSON in a fixed shape
 async function readId(file: File): Promise<IdReading> {
-  const data = Buffer.from(await file.arrayBuffer()).toString("base64");
+  const arrayBuffer = await file.arrayBuffer();
+  const data = arrayBufferToBase64(arrayBuffer);
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash", // check ai.google.dev for the latest model name
+    model: "gemini-2.5-flash",
     contents: [
       {
         role: "user",
@@ -62,7 +73,6 @@ async function readId(file: File): Promise<IdReading> {
 }
 
 // ---------- name comparison: our code decides, not Gemini ----------
-// The tokens() function cleans a person's name by removing accents, converting letters to lowercase, removing numbers and punctuation, splitting the name into individual words, and removing empty words.
 function tokens(name: string) {
   return name
     .normalize("NFD")
@@ -129,7 +139,7 @@ export async function uploadId(
     return { error: "Use a JPG, PNG or WebP photo." };
   }
   if (file.size > MAX_BYTES) {
-    return { error: "That photo is too large. Use one under 4 MB." };
+    return { error: "That photo is too large. Use one under 3 MB." };
   }
 
   // Who is uploading? Only logged-in users can verify themselves.
@@ -139,7 +149,9 @@ export async function uploadId(
   let reading: IdReading;
   try {
     reading = await readId(file);
-  } catch {
+  } catch (err) {
+    // Crucial: This surfaces the exact underlying cause if verification still encounters issues
+    console.error("Gemini Verification Error Context:", err);
     return {
       error:
         "We couldn't check your ID right now. Please try again in a moment.",
@@ -176,9 +188,10 @@ export async function uploadId(
    WHERE owner_id = $2`,
       [status, session.user.id],
     );
-  } catch {
+  } catch (err) {
+    console.error("Database Save Error:", err);
     return { error: "We couldn't save your verification. Please try again." };
   }
 
-  redirect("/provider/dashboard"); // keep redirect outside try/catch
+  redirect("/provider/dashboard"); 
 }
