@@ -170,7 +170,7 @@ async function ExploreContent({
                   href={`/${s.slug}`}
                   className="group block h-full overflow-hidden rounded-3xl bg-white ring-1 ring-[#EBD3E0]/70 shadow-[0_1px_2px_rgba(111,29,68,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-20px_rgba(111,29,68,0.35)]"
                 >
-                  <div className="h-20 bg-linear-to-br from-[#6F1D44] via-[#8E2B5C] to-[#C46A94]" />
+                  <div className="h-20 bg-[#8E2B5C]" />
                   <div className="px-5 pb-5">
                     <StoreAvatar
                       name={s.name}
