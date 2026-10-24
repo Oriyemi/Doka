@@ -12,6 +12,7 @@ export type Store = {
   location: string;
   delivery_type: "in_store" | "home" | "both";
   verification_status: string | null;
+  logo_url: string | null;
 };
 
 export const DELIVERY_LABEL = {
@@ -39,12 +40,14 @@ export const getProviderStore = cache(async () => {
 
   return rows[0] as Store;
 });
+
 export const RESERVED_SLUGS = new Set([
   "api",
   "provider",
   "dashboard",
   "onboarding",
   "bookings",
+  "book",
   "profile",
   "store-setup",
   "sign-in",

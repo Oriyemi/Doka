@@ -11,8 +11,10 @@ import {
 import { db } from "@/lib/db";
 import { DELIVERY_LABEL, getProviderStore } from "@/lib/provider";
 import Spinner from "@/components/spinner";
+import StoreAvatar from "@/components/store-avatar";
 import CopyLink from "../copy-link";
 import PageHeader from "../page-header";
+import LogoForm from "./logo-form";
 import { btnOutline, card, cardTitle, display } from "../ui";
 
 const NAIRA = new Intl.NumberFormat("en-NG");
@@ -51,7 +53,6 @@ export default function StorePage() {
 async function StoreContent() {
   const store = await getProviderStore();
   const verified = store.verification_status === "verified";
-  const initial = store.name.trim()[0]?.toUpperCase() ?? "D";
 
   const { rows } = await db.query<Service>(
     `SELECT id, name, price_naira, duration_min, deposit_naira
@@ -63,16 +64,16 @@ async function StoreContent() {
     <div className="space-y-6 sm:space-y-8">
       <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-[#EBD3E0]/70 shadow-[0_1px_2px_rgba(111,29,68,0.06),0_16px_40px_-20px_rgba(111,29,68,0.28)]">
         {/* Banner */}
-        <div className="h-24 bg-linear-to-br from-[#6F1D44] via-[#8E2B5C] to-[#C46A94] sm:h-32" />
+        <div className="h-24 bg-[#6B1F45] sm:h-32" />
 
         <div className="px-5 pb-6 sm:px-8 sm:pb-8">
           <div className="-mt-10 flex flex-col gap-5 sm:-mt-12 md:flex-row md:items-end md:justify-between">
             <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end">
-              <span
-                className={`${display} flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl bg-[#6F1D44] text-4xl font-semibold text-white ring-4 ring-white sm:h-24 sm:w-24 sm:text-5xl`}
-              >
-                {initial}
-              </span>
+              <StoreAvatar
+                name={store.name}
+                logoUrl={store.logo_url}
+                className={`${display} h-20 w-20 rounded-3xl text-4xl sm:h-24 sm:w-24 sm:text-5xl`}
+              />
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -96,7 +97,7 @@ async function StoreContent() {
                   )}
                 </div>
                 <p className="mt-1 break-all text-sm text-[#6B4A5C]">
-                 doka-lilac.vercel.app/{store.slug}
+                  doka-lilac.vercel.app/{store.slug}
                 </p>
               </div>
             </div>
@@ -117,6 +118,10 @@ async function StoreContent() {
               <Scissors size={14} aria-hidden="true" />
               {rows.length} service{rows.length === 1 ? "" : "s"}
             </span>
+          </div>
+
+          <div className="mt-5 border-t border-[#EBD3E0]/70 pt-5">
+            <LogoForm hasLogo={!!store.logo_url} />
           </div>
         </div>
       </section>

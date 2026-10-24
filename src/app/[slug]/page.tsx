@@ -9,9 +9,11 @@ import {
   Wallet,
   Scissors,
 } from "lucide-react";
+import Navbar from "@/components/Navbar";
+import StoreAvatar from "@/components/store-avatar";
+import Spinner from "@/components/spinner";
 import { db } from "@/lib/db";
 import { DELIVERY_LABEL, type Store } from "@/lib/provider";
-import Spinner from "@/components/spinner";
 import {
   btnPrimary,
   card,
@@ -19,7 +21,16 @@ import {
   display,
 } from "@/app/provider/dashboard/ui";
 
-export const metadata = { title: "Store | Doka" };
+type Params = Promise<{ slug: string }>;
+
+export async function generateMetadata({ params }: { params: Params }) {
+  const { slug } = await params;
+  const { rows } = await db.query<{ name: string }>(
+    `SELECT name FROM store WHERE lower(slug) = lower($1) LIMIT 1`,
+    [slug],
+  );
+  return { title: rows[0] ? `${rows[0].name} | Doka` : "Store | Doka" };
+}
 
 const NAIRA = new Intl.NumberFormat("en-NG");
 
@@ -39,31 +50,26 @@ const duration = (m: number) =>
       : `${m} min`;
 
 // No await here, so nothing dynamic runs outside Suspense.
-export default function PublicStorePage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default function PublicStorePage({ params }: { params: Params }) {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-6 sm:py-10">
-      <Suspense
-        fallback={<Spinner fullScreen={false} label="Loading store..." />}
-      >
-        <StoreContent params={params} />
-      </Suspense>
-    </main>
+    <>
+      <Navbar />
+      <main className="mx-auto max-w-4xl px-4 py-6 sm:py-10">
+        <Suspense
+          fallback={<Spinner fullScreen={false} label="Loading store..." />}
+        >
+          <StoreContent params={params} />
+        </Suspense>
+      </main>
+    </>
   );
 }
 
-async function StoreContent({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+async function StoreContent({ params }: { params: Params }) {
   const { slug } = await params;
 
   const { rows: storeRows } = await db.query<Store>(
-    `SELECT id, name, slug, location, delivery_type, verification_status
+    `SELECT id, name, slug, location, delivery_type, verification_status, logo_url
      FROM store WHERE lower(slug) = lower($1) LIMIT 1`,
     [slug],
   );
@@ -71,7 +77,6 @@ async function StoreContent({
   if (!store) notFound();
 
   const verified = store.verification_status === "verified";
-  const initial = store.name.trim()[0]?.toUpperCase() ?? "D";
 
   const { rows } = await db.query<Service>(
     `SELECT id, name, price_naira, duration_min, deposit_naira
@@ -82,14 +87,14 @@ async function StoreContent({
   return (
     <div className="space-y-6 sm:space-y-8">
       <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-[#EBD3E0]/70">
-        <div className="h-24 bg-linear-to-br from-[#6F1D44] via-[#8E2B5C] to-[#C46A94] sm:h-32" />
+        <div className="h-24 bg-linear-to-br sm:h-32" />
         <div className="px-5 pb-6 sm:px-8 sm:pb-8">
           <div className="-mt-10 flex items-end gap-4 sm:-mt-12">
-            <span
-              className={`${display} flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl bg-[#6F1D44] text-4xl font-semibold text-white ring-4 ring-white sm:h-24 sm:w-24 sm:text-5xl`}
-            >
-              {initial}
-            </span>
+            <StoreAvatar
+              name={store.name}
+              logoUrl={store.logo_url}
+              className={`${display} h-20 w-20 rounded-3xl text-4xl sm:h-24 sm:w-24 sm:text-5xl`}
+            />
             <div className="min-w-0 pb-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1
@@ -160,12 +165,19 @@ async function StoreContent({
                       : "No deposit"}
                   </span>
                 </div>
-                <Link
-                  href={`/book/${s.id}`}
-                  className={`${btnPrimary} mt-4 w-full`}
-                >
-                  Book
-                </Link>
+
+                {verified ? (
+                  <Link
+                    href={`/book/${s.id}`}
+                    className={`${btnPrimary} mt-4 w-full`}
+                  >
+                    Book
+                  </Link>
+                ) : (
+                  <p className="mt-4 rounded-xl bg-white px-4 py-3 text-center text-xs font-medium text-[#6B4A5C] ring-1 ring-[#EBD3E0]">
+                    Booking opens once this provider is verified.
+                  </p>
+                )}
               </li>
             ))}
           </ul>
