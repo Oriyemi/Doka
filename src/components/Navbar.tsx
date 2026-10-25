@@ -37,7 +37,7 @@ export default function Navbar() {
           </Link>
 
           <Link
-            href="/bookings"
+            href="/dashboard/bookings"
             className="text-sm text-white/70 transition hover:text-white"
           >
             My Bookings
@@ -85,7 +85,7 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/bookings"
+              href="/dashboard/bookings"
               onClick={() => setMenuOpen(false)}
               className="rounded-lg px-3 py-3 text-sm text-white/75 transition hover:bg-white/10 hover:text-white"
             >
