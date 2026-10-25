@@ -23,8 +23,8 @@ import type { BookingSummary } from "@/emails/components/BookingDetails";
 //   src/emails/**     the templates. What each email looks like and says.
 //   src/lib/email.ts  this file. One send function per email. Each one picks
 //                     the template, sets the subject and fills in the links.
-//   callers           src/lib/auth.ts today, booking code later. They call a
-//                     send function and never touch Resend or a template.
+//   callers           src/lib/auth.ts and the booking server actions. They
+//                     call a send function and never touch Resend or a template.
 //
 // To add an email: add a template under src/emails, then add a send function
 // at the bottom of this file.
@@ -127,17 +127,28 @@ export function sendOtpEmail(to: string, props: { otp: string; purpose: OtpPurpo
 }
 
 // ---------------------------------------------------------------------------
-// Booking emails. NONE of these are wired up yet, because the app has no
-// booking code to call them from. Each comment says where the call belongs.
+// Booking emails.
+//
+// Wired up:
+//   sendBookingRequestReceivedEmail  createBooking (customer)
+//   sendNewBookingRequestEmail       createBooking (provider)
+//   sendBookingConfirmedEmail        respond, on Accept
+//   sendBookingDeclinedEmail         respond, on Decline
+// Not wired up yet: cancelled, pending reminder and booking reminder.
 //
 // `booking` is a BookingSummary (see src/emails/components/BookingDetails.tsx).
 // Format `when`, `duration` and `price` before passing them in.
 //
 // A send can fail (Resend down, bad address). Do not let that undo a booking
-// that has already been saved. Wrap the call the way src/lib/auth.ts does with
-// sendInBackground, so the email goes out after the response and a failure is
-// logged instead of thrown.
+// that has already been saved. Call these inside after() and log failures.
 // ---------------------------------------------------------------------------
+
+// Where the provider reviews incoming requests.
+const PROVIDER_INCOMING = "/provider/dashboard/bookings?tab=incoming";
+const PROVIDER_BOOKINGS = "/provider/dashboard/bookings";
+// The customer's bookings page does not exist yet, so these links 404 until
+// it is built.
+const CUSTOMER_BOOKINGS = "/dashboard/bookings";
 
 // To the customer: "we have your request, waiting on the provider".
 // Call from the server action that creates a booking, after the row is saved.
@@ -147,7 +158,7 @@ export function sendBookingRequestReceivedEmail(to: string, props: { booking: Bo
     `Booking request sent: ${props.booking.serviceName}`,
     createElement(BookingRequestReceivedEmail, {
       ...props,
-      bookingsUrl: appUrl("/dashboard/bookings"),
+      bookingsUrl: appUrl(CUSTOMER_BOOKINGS),
     }),
   );
 }
@@ -159,7 +170,7 @@ export function sendNewBookingRequestEmail(to: string, props: { booking: Booking
   return send(
     to,
     `New booking request from ${props.booking.customerName}`,
-    createElement(NewBookingRequestEmail, { ...props, reviewUrl: appUrl("/provider/bookings") }),
+    createElement(NewBookingRequestEmail, { ...props, reviewUrl: appUrl(PROVIDER_INCOMING) }),
   );
 }
 
@@ -167,11 +178,8 @@ export function sendNewBookingRequestEmail(to: string, props: { booking: Booking
 // Nothing in a web request can fire this, because it depends on time passing.
 // It needs a scheduled job (a cron) that runs every few minutes and:
 //   1. finds bookings that are still pending and were created over an hour ago,
-//   2. skips any that already had a reminder,
+//   2. skips any that already had a reminder (pending_reminder_sent_at is set),
 //   3. calls this function, then records that the reminder was sent.
-// Step 2 needs a column on the bookings table, for example
-// `pending_reminder_sent_at`. Without it the provider gets the same reminder
-// on every run.
 export function sendBookingPendingReminderEmail(
   to: string,
   props: { booking: BookingSummary; waitingFor: string },
@@ -181,23 +189,23 @@ export function sendBookingPendingReminderEmail(
     `Still waiting for your answer: ${props.booking.serviceName}`,
     createElement(BookingPendingReminderEmail, {
       ...props,
-      reviewUrl: appUrl("/provider/bookings"),
+      reviewUrl: appUrl(PROVIDER_INCOMING),
     }),
   );
 }
 
 // To the customer: "your booking is confirmed".
-// Call from the server action behind the provider's Accept button.
+// Called from the Accept branch of respond in the provider's bookings actions.
 export function sendBookingConfirmedEmail(to: string, props: { booking: BookingSummary }) {
   return send(
     to,
     `Booking confirmed: ${props.booking.serviceName}`,
-    createElement(BookingConfirmedEmail, { ...props, bookingsUrl: appUrl("/dashboard/bookings") }),
+    createElement(BookingConfirmedEmail, { ...props, bookingsUrl: appUrl(CUSTOMER_BOOKINGS) }),
   );
 }
 
 // To the customer: "your booking was declined".
-// Call from the server action behind the provider's Decline button.
+// Called from the Decline branch of respond in the provider's bookings actions.
 export function sendBookingDeclinedEmail(
   to: string,
   props: { booking: BookingSummary; reason?: string },
@@ -205,7 +213,7 @@ export function sendBookingDeclinedEmail(
   return send(
     to,
     `Booking declined: ${props.booking.serviceName}`,
-    createElement(BookingDeclinedEmail, { ...props, servicesUrl: appUrl("/services") }),
+    createElement(BookingDeclinedEmail, { ...props, servicesUrl: appUrl("/explore") }),
   );
 }
 
@@ -216,7 +224,7 @@ export function sendBookingCancelledEmail(
   to: string,
   props: { booking: BookingSummary; recipient: "customer" | "provider" },
 ) {
-  const bookingsPath = props.recipient === "provider" ? "/provider/bookings" : "/dashboard/bookings";
+  const bookingsPath = props.recipient === "provider" ? PROVIDER_BOOKINGS : CUSTOMER_BOOKINGS;
   return send(
     to,
     `Booking cancelled: ${props.booking.serviceName}`,
@@ -226,8 +234,8 @@ export function sendBookingCancelledEmail(
 
 // To the customer: "your booking is tomorrow".
 // Needs a scheduled job, like the pending reminder above. The job finds
-// confirmed bookings that start within the reminder window and have not been
-// reminded yet, which needs its own `reminder_sent_at` column.
+// accepted bookings that start within the reminder window and have no
+// reminder_sent_at yet.
 export function sendBookingReminderEmail(
   to: string,
   props: { booking: BookingSummary; startsIn: string },
@@ -235,6 +243,6 @@ export function sendBookingReminderEmail(
   return send(
     to,
     `Reminder: ${props.booking.serviceName} is ${props.startsIn}`,
-    createElement(BookingReminderEmail, { ...props, bookingsUrl: appUrl("/dashboard/bookings") }),
+    createElement(BookingReminderEmail, { ...props, bookingsUrl: appUrl(CUSTOMER_BOOKINGS) }),
   );
 }

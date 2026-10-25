@@ -53,8 +53,6 @@ export const config = {
   matcher: [
     "/onboarding/:path*",
     "/dashboard/:path*",
-    "/bookings/:path*",
-    "/profile/:path*",
     "/store-setup/:path*",
     "/provider/:path*",
   ],
