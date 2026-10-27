@@ -6,6 +6,7 @@ import Spinner from "@/components/spinner";
 import StoreAvatar from "@/components/store-avatar";
 import { DELIVERY_LABEL } from "@/lib/provider";
 import { getExploreStores } from "@/lib/explore";
+import Footer from "@/components/Footer";
 
 
 export const metadata = { title: "Explore | Doka" };
@@ -60,6 +61,7 @@ export default function ExplorePage({
           </Suspense>
         </section>
       </main>
+      <Footer />
     </>
   );
 }
