@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getProviderStore } from "@/lib/provider";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { toWhatsAppNumber } from "@/lib/whatsapp";
 
 export type LogoState = { error?: string };
 
@@ -70,4 +71,29 @@ export async function removeLogo() {
   await db.query(`UPDATE store SET logo_url = NULL WHERE id = $1`, [store.id]);
 
   refresh(store.slug);
+}
+export type WhatsappState = { error?: string; saved?: boolean; value?: string };
+
+export async function saveWhatsapp(
+  _prev: WhatsappState,
+  fd: FormData,
+): Promise<WhatsappState> {
+  const store = await getProviderStore(); // also proves who is calling
+  const raw = String(fd.get("whatsapp") ?? "").trim();
+
+  // An empty field removes the number
+  if (raw === "") {
+    await db.query(`UPDATE store SET whatsapp_number = NULL WHERE id = $1`, [store.id]);
+    revalidatePath("/provider/dashboard/store");
+    return { saved: true };
+  }
+
+  const number = toWhatsAppNumber(raw);
+  if (!number) {
+    return { error: "Enter a valid Nigerian mobile number, like 08012345678.", value: raw };
+  }
+
+  await db.query(`UPDATE store SET whatsapp_number = $1 WHERE id = $2`, [number, store.id]);
+  revalidatePath("/provider/dashboard/store");
+  return { saved: true };
 }

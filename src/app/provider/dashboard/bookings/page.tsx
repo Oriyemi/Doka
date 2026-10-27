@@ -17,7 +17,7 @@ import Spinner from "@/components/spinner";
 import PageHeader from "../page-header";
 import StoreCard from "../store-card";
 import { btnOutline, btnPrimary, card, cardTitle, display } from "../ui";
-import { respond } from "./actions";
+import { respond, markDepositPaid } from "./actions";
 
 const TABS = [
   ["incoming", "Incoming"],
@@ -47,13 +47,16 @@ const EMPTY = {
 
 type Row = {
   id: string;
+  reference: string;
   customer: string;
   service: string;
   start_at: Date;
   status: string;
   deposit_paid: boolean;
+  deposit_naira: number | null;
 };
 
+const NAIRA = new Intl.NumberFormat("en-NG");
 const TZ = "Africa/Lagos";
 const dayFmt = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
@@ -117,7 +120,8 @@ async function BookingsContent({
   const store = await getProviderStore();
 
   const { rows } = await db.query<Row>(
-    `SELECT b.id, b.start_at, b.status, b.deposit_paid, u.name AS customer, s.name AS service
+    `SELECT b.id, b.reference, b.start_at, b.status, b.deposit_paid, b.deposit_naira,
+            u.name AS customer, s.name AS service
      FROM booking b
      JOIN service s ON s.id = b.service_id
      JOIN "user" u ON u.id = b.customer_id
@@ -172,6 +176,8 @@ async function BookingsContent({
             {rows.map((r) => {
               const status = label(r);
               const StatusIcon = STATUS_ICON[status] ?? CircleCheck;
+              const hasDeposit = !!r.deposit_naira;
+              const owesDeposit = hasDeposit && !r.deposit_paid;
               return (
                 <li
                   key={r.id}
@@ -203,9 +209,21 @@ async function BookingsContent({
                             Deposit paid
                           </span>
                         )}
-                        {tab === "previous" && (
+                        {tab === "upcoming" && hasDeposit && (
+                          r.deposit_paid ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#E4F4E8] px-2.5 py-0.5 text-xs font-semibold text-[#1F6B3A]">
+                              <CircleCheck size={12} aria-hidden="true" />
+                              Deposit received
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-[#FFF1D6] px-2.5 py-0.5 text-xs font-semibold text-[#8A5A00]">
+                              Deposit pending · ₦{NAIRA.format(r.deposit_naira!)}
+                            </span>
+                          )
+                        )}
+                        {(tab === "upcoming" || tab === "previous") && (
                           <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-[#6B4A5C] ring-1 ring-[#EBD3E0]">
-                            ID DK-{r.id.slice(0, 4).toUpperCase()}
+                            Ref {r.reference}
                           </span>
                         )}
                       </div>
@@ -233,6 +251,18 @@ async function BookingsContent({
                       >
                         <X size={16} aria-hidden="true" />
                         Decline
+                      </button>
+                    </form>
+                  )}
+
+                  {tab === "upcoming" && owesDeposit && (
+                    <form action={markDepositPaid} className="sm:shrink-0">
+                      <input type="hidden" name="id" value={r.id} />
+                      <button
+                        className={`${btnPrimary} inline-flex w-full items-center justify-center gap-2 sm:w-auto`}
+                      >
+                        <Check size={16} aria-hidden="true" />
+                        Mark deposit received
                       </button>
                     </form>
                   )}

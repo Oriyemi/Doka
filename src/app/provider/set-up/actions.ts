@@ -1,4 +1,4 @@
-// what this page does: provider submits the form (business name, link, location, services etc), it checks the user (must be signed in and have chosen the provider role), validates the form, saves to PostgreSQL (inserts the store into the database), then redirects to /provider/verify to verify with an ID card.
+// what this page does: a signed-in user (a new provider, or a client who wants to become one) submits the form (business name, link, location, services etc), it validates the form, saves to PostgreSQL (inserts the store into the database), marks the user as a provider, then redirects to /provider/verify to verify with an ID card.
 
 "use server"; // server actions: they run on the server and talk to the db
 
@@ -17,7 +17,7 @@ export async function createStore(
   // 1. Who is this? The user id comes from the session, never from the form.
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
-  if (session.user.role !== "provider") redirect("/onboarding");
+  if (!session.user.onboarded) redirect("/onboarding");
 
   // 2. Read and validate
   const name = String(formData.get("name") ?? "").trim();
@@ -66,6 +66,17 @@ export async function createStore(
     return { error: "Something went wrong. Try again." };
   }
 
-  // 4. Next step (redirect must stay outside try/catch)
+  // 4. A client who opens a store is now a provider too. They keep their
+  // account and can still book as a client. This is best effort: the store
+  // already exists, so a failure here is logged and must not block them.
+  try {
+    await db.query(`UPDATE "user" SET "role" = 'provider' WHERE id = $1`, [
+      session.user.id,
+    ]);
+  } catch (e) {
+    console.error("[createStore] could not update role", e);
+  }
+
+  // 5. Next step (redirect must stay outside try/catch)
   redirect("/provider/verify");
 }
