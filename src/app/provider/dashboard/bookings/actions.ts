@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { db } from "@/lib/db";
 import { getProviderStore } from "@/lib/provider";
 import { sendBookingConfirmedEmail, sendBookingDeclinedEmail } from "@/lib/email";
+import { whatsappLink } from "@/lib/whatsapp";
 import type { BookingSummary } from "@/emails/components/BookingDetails";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -34,14 +35,18 @@ async function notifyCustomer(bookingId: string, outcome: "accepted" | "declined
       reference: string;
       start_at: Date;
       price_naira: number;
+      deposit_naira: number | null;
+      deposit_paid: boolean;
       service_name: string;
       duration_min: number;
       store_name: string;
+      whatsapp_number: string | null;
       customer_name: string;
       customer_email: string;
     }>(
-      `SELECT b.reference, b.start_at, b.price_naira,
-              s.name AS service_name, s.duration_min, st.name AS store_name,
+      `SELECT b.reference, b.start_at, b.price_naira, b.deposit_naira, b.deposit_paid,
+              s.name AS service_name, s.duration_min,
+              st.name AS store_name, st.whatsapp_number,
               cu.name AS customer_name, cu.email AS customer_email
        FROM booking b
        JOIN service s ON s.id = b.service_id
@@ -64,7 +69,20 @@ async function notifyCustomer(bookingId: string, outcome: "accepted" | "declined
     };
 
     if (outcome === "accepted") {
-      await sendBookingConfirmedEmail(r.customer_email, { booking });
+      // Only when there is a deposit and it has not been paid yet
+      const deposit =
+        r.deposit_naira && !r.deposit_paid
+          ? {
+              amount: `NGN ${NAIRA.format(r.deposit_naira)}`,
+              whatsappUrl: r.whatsapp_number
+                ? whatsappLink(
+                    r.whatsapp_number,
+                    `Hi, I'm ${r.customer_name}. I booked ${r.service_name} on ${booking.when} (Ref ${r.reference}). How can I pay the ₦${NAIRA.format(r.deposit_naira)} deposit?`,
+                  )
+                : undefined,
+            }
+          : undefined;
+      await sendBookingConfirmedEmail(r.customer_email, { booking, deposit });
     } else {
       await sendBookingDeclinedEmail(r.customer_email, { booking });
     }
@@ -92,4 +110,22 @@ export async function respond(formData: FormData) {
   }
 
   revalidatePath("/provider/dashboard/bookings");
+}
+
+export async function markDepositPaid(formData: FormData) {
+  const store = await getProviderStore();
+  const id = String(formData.get("id") ?? "");
+  if (!UUID.test(id)) return;
+
+  // Only this provider's own accepted booking, and only while the deposit is
+  // still unpaid, so a double click does nothing the second time.
+  await db.query(
+    `UPDATE booking SET deposit_paid = true
+     WHERE id = $1 AND store_id = $2 AND status = 'accepted'
+       AND deposit_naira > 0 AND deposit_paid = false`,
+    [id, store.id],
+  );
+
+  revalidatePath("/provider/dashboard/bookings");
+  revalidatePath("/dashboard/bookings");
 }

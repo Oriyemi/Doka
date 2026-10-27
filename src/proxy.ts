@@ -2,11 +2,11 @@ import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 
-function roleHome(role?: string | null) {
-  return role === "provider" ? "/provider/set-up" : "/explore";
-}
+// Everyone who already has an account lands on Explore. Providers reach their
+// dashboard from the navbar, and clients reach their bookings the same way.
+const HOME = "/explore";
 
-// Cookie check first (cheap), then the real session to read onboarded and role.
+// Cookie check first (cheap), then the real session to read onboarded.
 // NOT the security boundary: every page and server action still checks the
 // real session itself.
 export async function proxy(request: NextRequest) {
@@ -27,12 +27,20 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(signIn);
   }
 
-  const session = await auth.api.getSession({ headers: request.headers });
+  let session;
+  try {
+    session = await auth.api.getSession({ headers: request.headers });
+  } catch (e) {
+    // The database could not be reached. Do not turn a network hiccup into an
+    // error page: the page itself checks the session again.
+    console.error("proxy: session check failed:", e);
+    return NextResponse.next();
+  }
   if (!session) {
     return NextResponse.redirect(signIn);
   }
 
-  const { onboarded, role } = session.user;
+  const { onboarded } = session.user;
   const onOnboarding =
     pathname === "/onboarding" || pathname.startsWith("/onboarding/");
 
@@ -41,9 +49,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/onboarding", request.url));
   }
 
-  // Already onboarded: skip onboarding, go to their own home
+  // Already onboarded: skip onboarding, go to Explore
   if (onboarded && onOnboarding) {
-    return NextResponse.redirect(new URL(roleHome(role), request.url));
+    return NextResponse.redirect(new URL(HOME, request.url));
   }
 
   return NextResponse.next();

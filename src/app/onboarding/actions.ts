@@ -15,7 +15,7 @@ export async function completeOnboarding(
   // Onboarding runs once. Without this, anyone signed in could call the
   // action again and change their role.
   if (session.user.onboarded) {
-    redirect(session.user.role === "provider" ? "/provider/dashboard" : "/explore");
+     redirect("/explore");
   }
 
   if (choice !== "provider" && choice !== "customer") {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { Eye, EyeOff } from "lucide-react";
+import { safeRedirect } from "@/lib/redirect";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -16,6 +17,16 @@ export default function SignInForm() {
   const [error, setError] = useState<string | null>(null);
   const [unverified, setUnverified] = useState(false);
   const [resent, setResent] = useState(false);
+    // After sign-in: go through /onboarding, which sends people who already
+  // finished it to the page they wanted (or Explore), and sets up new ones.
+  // Read at click time, so this component needs no useSearchParams.
+  function afterSignIn() {
+    const wanted = safeRedirect(
+      new URLSearchParams(window.location.search).get("redirect"),
+      "",
+    );
+    return wanted ? `/onboarding?next=${encodeURIComponent(wanted)}` : "/onboarding";
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -24,12 +35,12 @@ export default function SignInForm() {
     setResent(false);
     setLoading(true);
 
+        const target = afterSignIn();
     const { error } = await authClient.signIn.email({
       email,
       password,
-      callbackURL: "/onboarding",
+      callbackURL: target,
     });
-
     setLoading(false);
 
     if (error) {
@@ -42,7 +53,7 @@ export default function SignInForm() {
       return;
     }
 
-    router.push("/onboarding");
+    router.push(target);
   }
 
   async function handleResend() {
@@ -64,7 +75,7 @@ export default function SignInForm() {
   }
 
   async function handleGoogle() {
-    await authClient.signIn.social({ provider: "google", callbackURL: "/onboarding" });
+        await authClient.signIn.social({ provider: "google", callbackURL: afterSignIn() });
   }
 
   return (

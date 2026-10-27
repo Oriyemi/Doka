@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ArrowLeftRight,
+  CalendarCheck,
   CalendarDays,
   Clock,
+  Compass,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -29,6 +32,12 @@ const MAIN: Item[] = [
   { label: "Availability", href: `${BASE}/availability`, icon: Clock },
   { label: "Bookings", href: `${BASE}/bookings`, icon: CalendarDays },
   { label: "Reviews", href: `${BASE}/reviews`, icon: MessageSquare },
+];
+
+// The client side of the same account
+const CLIENT: Item[] = [
+  { label: "Explore", href: "/explore", icon: Compass },
+  { label: "My bookings", href: "/dashboard/bookings", icon: CalendarCheck },
 ];
 
 const ACCOUNT: Item[] = [
@@ -113,18 +122,28 @@ export default function DashboardShell({
           Doka.
         </Link>
 
-        <Link
-          href={`${BASE}/account`}
-          aria-label="Account settings"
-          className="ml-auto flex items-center gap-3 rounded-full py-1 pl-1 pr-1 transition hover:bg-white/10 sm:pr-4"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F6E6F0] text-sm font-bold text-[#6F1D44]">
-            {initials}
-          </span>
-          <span className="hidden max-w-40 truncate text-sm font-semibold text-white sm:block">
-            {userName}
-          </span>
-        </Link>
+        <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <Link
+            href="/explore"
+            className="hidden items-center gap-2 rounded-full border border-white/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/25 sm:inline-flex"
+          >
+            <ArrowLeftRight size={16} aria-hidden="true" />
+            Switch to client
+          </Link>
+
+          <Link
+            href={`${BASE}/account`}
+            aria-label="Account settings"
+            className="flex items-center gap-3 rounded-full py-1 pl-1 pr-1 transition hover:bg-white/10 sm:pr-4"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F6E6F0] text-sm font-bold text-[#6F1D44]">
+              {initials}
+            </span>
+            <span className="hidden max-w-40 truncate text-sm font-semibold text-white sm:block">
+              {userName}
+            </span>
+          </Link>
+        </div>
       </header>
 
       {/* Overlay */}
@@ -174,6 +193,11 @@ export default function DashboardShell({
 
         <nav className="scrollbar-none mt-4 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
           {MAIN.map(link)}
+
+          <p className="mt-4 px-4 pb-1 text-xs font-semibold uppercase tracking-wider text-white/50">
+            Switch to client
+          </p>
+          {CLIENT.map(link)}
         </nav>
 
         <div className="mt-3 flex flex-col gap-1 border-t border-white/15 pt-3">

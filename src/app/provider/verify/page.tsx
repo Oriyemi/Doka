@@ -1,4 +1,3 @@
-
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -10,8 +9,9 @@ import Spinner from "@/components/spinner";
 async function VerifyContent() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
-  if (session.user.role !== "provider") redirect("/onboarding");
 
+  // A provider is someone who owns a store (not a role flag), so a client who
+  // just opened a store can verify straight away.
   const { rows } = await db.query(
     "SELECT verification_status FROM store WHERE owner_id = $1",
     [session.user.id],
@@ -27,7 +27,7 @@ async function VerifyContent() {
 
 export default function VerifyPage() {
   return (
-    <Suspense fallback={<Spinner label="Loading verification...."/>}>
+    <Suspense fallback={<Spinner label="Loading verification..." />}>
       <VerifyContent />
     </Suspense>
   );

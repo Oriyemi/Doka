@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CalendarCheck,
   LayoutGrid,
-  LogOut,
   Search,
   ShieldCheck,
   Store,
@@ -17,8 +16,8 @@ import { authClient } from "@/lib/auth-client";
 
 const SIGN_IN = "/sign-in";
 const SIGN_UP = "/sign-up";
-// /onboarding sends onboarded users on to their dashboard or Explore
-const APP_HOME = "/onboarding";
+// Where signed-in users land after the splash
+const APP_HOME = "/explore";
 
 const steps = [
   {
@@ -60,18 +59,38 @@ const features: { title: string; text: string; icon: LucideIcon }[] = [
 
 export default function Home() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const { data: session } = authClient.useSession();
+  const [splashDone, setSplashDone] = useState(false);
+  const [waitedTooLong, setWaitedTooLong] = useState(false);
+  const { data: session, isPending } = authClient.useSession();
 
-  async function handleSignOut() {
-    await authClient.signOut();
-    router.refresh();
+  // After the splash: anyone signed in goes straight to Explore
+  // (or to onboarding if they never finished it).
+  useEffect(() => {
+    if (!splashDone || isPending || !session) return;
+    const onboarded = (session.user as { onboarded?: boolean }).onboarded;
+    router.replace(onboarded === false ? "/onboarding" : APP_HOME);
+  }, [splashDone, isPending, session, router]);
+
+  // If the session check hangs (for example, no network), stop waiting after
+  // 4 seconds and show the landing page instead of a blank screen.
+  useEffect(() => {
+    if (!splashDone || !isPending) return;
+    const t = setTimeout(() => setWaitedTooLong(true), 4000);
+    return () => clearTimeout(t);
+  }, [splashDone, isPending]);
+
+  // 1. The splash always comes first, for everyone.
+  if (!splashDone) {
+    return <SplashScreen finishLoading={() => setSplashDone(true)} />;
   }
 
-  if (isLoading) {
-    return <SplashScreen finishLoading={() => setIsLoading(false)} />;
+  // 2. Signed in (redirecting) or still checking: show only the brand color,
+  //    so the landing page never flashes for a returning user.
+  if (session || (isPending && !waitedTooLong)) {
+    return <div className="min-h-dvh bg-[#701E47]" aria-busy="true" />;
   }
 
+  // 3. Not signed in: the landing page.
   return (
     <div className="min-h-dvh bg-white text-[#2A0A1B]">
       {/* Navbar */}
@@ -82,40 +101,18 @@ export default function Home() {
           </Link>
 
           <div className="flex items-center gap-3">
-            {session ? (
-              <>
-                <Link
-                  href={APP_HOME}
-                  className="rounded-xl bg-[#8C2B5C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#701E47]"
-                >
-                  Open Doka
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="inline-flex items-center gap-2 rounded-xl border border-[#8C2B5C] px-4 py-2 text-sm font-semibold text-[#8C2B5C] transition hover:bg-[#8C2B5C]/5"
-                >
-                  <LogOut size={16} aria-hidden="true" />
-                  <span className="hidden sm:inline">Sign out</span>
-                  <span className="sr-only sm:hidden">Sign out</span>
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href={SIGN_IN}
-                  className="hidden rounded-xl px-4 py-2 text-sm font-semibold text-[#8C2B5C] transition hover:bg-[#8C2B5C]/5 sm:block"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href={SIGN_UP}
-                  className="rounded-xl bg-[#8C2B5C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#701E47]"
-                >
-                  Get started
-                </Link>
-              </>
-            )}
+            <Link
+              href={SIGN_IN}
+              className="hidden rounded-xl px-4 py-2 text-sm font-semibold text-[#8C2B5C] transition hover:bg-[#8C2B5C]/5 sm:block"
+            >
+              Sign in
+            </Link>
+            <Link
+              href={SIGN_UP}
+              className="rounded-xl bg-[#8C2B5C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#701E47]"
+            >
+              Get started
+            </Link>
           </div>
         </nav>
       </header>
@@ -136,29 +133,18 @@ export default function Home() {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            {session ? (
-              <Link
-                href={APP_HOME}
-                className="rounded-xl bg-white px-6 py-3 text-center text-sm font-bold text-[#701E47] transition hover:bg-white/90"
-              >
-                Open Doka
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href={SIGN_UP}
-                  className="rounded-xl bg-white px-6 py-3 text-center text-sm font-bold text-[#701E47] transition hover:bg-white/90"
-                >
-                  Get started
-                </Link>
-                <Link
-                  href={SIGN_IN}
-                  className="rounded-xl border border-white/40 px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
-                >
-                  I already have an account
-                </Link>
-              </>
-            )}
+            <Link
+              href={SIGN_UP}
+              className="rounded-xl bg-white px-6 py-3 text-center text-sm font-bold text-[#701E47] transition hover:bg-white/90"
+            >
+              Get started
+            </Link>
+            <Link
+              href={SIGN_IN}
+              className="rounded-xl border border-white/40 px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              I already have an account
+            </Link>
           </div>
         </div>
       </section>
@@ -177,11 +163,7 @@ export default function Home() {
               className="rounded-2xl border border-[#D9A3BD] p-6"
             >
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8C2B5C] text-sm font-bold text-white">
-                {i === 0 ? (
-                  <Search size={18} aria-hidden="true" />
-                ) : (
-                  i + 1
-                )}
+                {i === 0 ? <Search size={18} aria-hidden="true" /> : i + 1}
               </span>
               <h3 className="mt-4 text-lg font-bold">{step.title}</h3>
               <p className="mt-2 text-sm text-gray-600">{step.text}</p>
@@ -212,36 +194,34 @@ export default function Home() {
       </section>
 
       {/* Final call to action */}
-      {!session && (
-        <section className="mx-auto max-w-6xl px-6 py-20">
-          <div className="relative overflow-hidden rounded-3xl bg-[#701E47] px-6 py-14 text-center text-white md:px-12">
-            <div className="pointer-events-none absolute -bottom-24 -right-16 h-64 w-64 rounded-full bg-[#8C2B5C]" />
-            <div className="relative">
-              <h2 className="text-3xl font-extrabold md:text-4xl">
-                Ready to get started?
-              </h2>
-              <p className="mx-auto mt-3 max-w-lg text-white/80">
-                Create your free account today, whether you are looking for a
-                service or offering one.
-              </p>
-              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Link
-                  href={SIGN_UP}
-                  className="w-full rounded-xl bg-white px-6 py-3 text-sm font-bold text-[#701E47] sm:w-auto"
-                >
-                  Create account
-                </Link>
-                <Link
-                  href={SIGN_IN}
-                  className="text-sm font-semibold text-white underline underline-offset-4"
-                >
-                  Already have an account? Sign in
-                </Link>
-              </div>
+      <section className="mx-auto max-w-6xl px-6 py-20">
+        <div className="relative overflow-hidden rounded-3xl bg-[#701E47] px-6 py-14 text-center text-white md:px-12">
+          <div className="pointer-events-none absolute -bottom-24 -right-16 h-64 w-64 rounded-full bg-[#8C2B5C]" />
+          <div className="relative">
+            <h2 className="text-3xl font-extrabold md:text-4xl">
+              Ready to get started?
+            </h2>
+            <p className="mx-auto mt-3 max-w-lg text-white/80">
+              Create your free account today, whether you are looking for a
+              service or offering one.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                href={SIGN_UP}
+                className="w-full rounded-xl bg-white px-6 py-3 text-sm font-bold text-[#701E47] sm:w-auto"
+              >
+                Create account
+              </Link>
+              <Link
+                href={SIGN_IN}
+                className="text-sm font-semibold text-white underline underline-offset-4"
+              >
+                Already have an account? Sign in
+              </Link>
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* Footer */}
       <footer className="border-t border-[#8C2B5C]/10 px-6 py-8">

@@ -2,13 +2,14 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { CalendarDays, MapPin, Wallet } from "lucide-react";
+import { CalendarDays, MapPin, MessageCircle, Wallet } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import CancelButton from "./cancel-button";
 import StoreAvatar from "@/components/store-avatar";
 import Spinner from "@/components/spinner";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { whatsappLink } from "@/lib/whatsapp";
 
 type Search = Promise<{ tab?: string }>;
 
@@ -53,6 +54,8 @@ type Row = {
   status: string;
   price_naira: number;
   deposit_naira: number | null;
+  deposit_paid: boolean;
+  whatsapp_number: string | null;
   address: string | null;
   service_name: string;
   store_name: string;
@@ -123,7 +126,8 @@ async function Content({ searchParams }: { searchParams: Search }) {
 
   const { rows } = await db.query<Row>(
     `SELECT b.id, b.reference, b.start_at, b.end_at, b.status, b.price_naira, b.deposit_naira,
-            b.address, s.name AS service_name, st.name AS store_name, st.slug, st.logo_url
+            b.deposit_paid, b.address, s.name AS service_name,
+            st.name AS store_name, st.slug, st.logo_url, st.whatsapp_number
      FROM booking b
      JOIN service s ON s.id = b.service_id
      JOIN store st ON st.id = b.store_id
@@ -251,6 +255,41 @@ async function Content({ searchParams }: { searchParams: Search }) {
                         </div>
                       )}
                     </dl>
+
+                    {/* Deposit: the customer messages the provider on WhatsApp */}
+                    {b.deposit_naira ? (
+                      b.deposit_paid ? (
+                        <p className="mt-3 inline-flex rounded-full bg-[#E6F4EA] px-3 py-1 text-xs font-semibold text-[#1E6B3A]">
+                          Deposit received
+                        </p>
+                      ) : b.status === "accepted" && !ended ? (
+                        b.whatsapp_number ? (
+                          <div className="mt-3 space-y-2">
+                            <a
+                              href={whatsappLink(
+                                b.whatsapp_number,
+                                `Hi, I'm ${session.user.name}. I booked ${b.service_name} on ${whenFmt.format(b.start_at)} (Ref ${b.reference}). How can I pay the ₦${NAIRA.format(b.deposit_naira)} deposit?`,
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex h-10 items-center gap-2 rounded-full bg-[#1F8F4E] px-5 text-sm font-semibold text-white transition hover:bg-[#177A41]"
+                            >
+                              <MessageCircle size={16} aria-hidden="true" />
+                              Message provider on WhatsApp
+                            </a>
+                            <p className="text-xs text-[#6B4A5C]">
+                              Only pay the account details your provider gives
+                              you in this chat, and keep your payment proof.
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-xs text-[#6B4A5C]">
+                            Your provider hasn&apos;t added a WhatsApp number
+                            yet. They&apos;ll contact you about the deposit.
+                          </p>
+                        )
+                      ) : null
+                    ) : null}
 
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                       <p className="text-xs text-[#6B4A5C]">

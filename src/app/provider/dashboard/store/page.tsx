@@ -16,6 +16,7 @@ import CopyLink from "../copy-link";
 import PageHeader from "../page-header";
 import LogoForm from "./logo-form";
 import { btnOutline, card, cardTitle, display } from "../ui";
+   import WhatsappForm from "./whatsapp-form";
 
 const NAIRA = new Intl.NumberFormat("en-NG");
 
@@ -59,6 +60,11 @@ async function StoreContent() {
      FROM service WHERE store_id = $1 AND active ORDER BY created_at`,
     [store.id],
   );
+     const { rows: wa } = await db.query<{ whatsapp_number: string | null }>(
+     `SELECT whatsapp_number FROM store WHERE id = $1`,
+     [store.id],
+   );
+   const whatsapp = wa[0]?.whatsapp_number ?? null;
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -123,6 +129,9 @@ async function StoreContent() {
           <div className="mt-5 border-t border-[#EBD3E0]/70 pt-5">
             <LogoForm hasLogo={!!store.logo_url} />
           </div>
+             <div className="mt-5 border-t border-[#EBD3E0]/70 pt-5">
+     <WhatsappForm defaultNumber={whatsapp ? "0" + whatsapp.slice(3) : ""} />
+   </div>
         </div>
       </section>
 

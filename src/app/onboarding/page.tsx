@@ -2,15 +2,18 @@ import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { safeRedirect } from "@/lib/redirect";
 import { RolePicker } from "./role-picker";
 
-async function OnboardingContent() {
+type Search = Promise<{ next?: string }>;
+
+async function OnboardingContent({ searchParams }: { searchParams: Search }) {
+  const { next } = await searchParams;
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session) redirect("/sign-in");
-  if (session.user.onboarded) {
-    redirect(session.user.role === "provider" ? "/provider/dashboard" : "/explore");
-  }
+  // Finished users never see onboarding again: they go where they were headed.
+  if (session.user.onboarded) redirect(safeRedirect(next));
 
   // Email sign-ups get their email prefix as a temporary name, so leave the
   // field empty for them. Google users already have a real name.
@@ -40,10 +43,10 @@ async function OnboardingContent() {
   );
 }
 
-export default function OnboardingPage() {
+export default function OnboardingPage({ searchParams }: { searchParams: Search }) {
   return (
     <Suspense fallback={<main className="min-h-screen bg-[#F6E8F0]" />}>
-      <OnboardingContent />
+      <OnboardingContent searchParams={searchParams} />
     </Suspense>
   );
 }

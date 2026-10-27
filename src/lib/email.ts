@@ -196,7 +196,10 @@ export function sendBookingPendingReminderEmail(
 
 // To the customer: "your booking is confirmed".
 // Called from the Accept branch of respond in the provider's bookings actions.
-export function sendBookingConfirmedEmail(to: string, props: { booking: BookingSummary }) {
+export function sendBookingConfirmedEmail(
+  to: string,
+  props: { booking: BookingSummary; deposit?: { amount: string; whatsappUrl?: string } },
+) {
   return send(
     to,
     `Booking confirmed: ${props.booking.serviceName}`,
