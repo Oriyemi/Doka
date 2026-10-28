@@ -53,6 +53,7 @@ export const RESERVED_SLUGS = new Set([
   "sign-in",
   "sign-up",
   "forgot-password",
+  "forget-password",
   "reset-password",
   "verify-email",
   "explore",
