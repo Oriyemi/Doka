@@ -1,3 +1,4 @@
+// verify-form.tsx
 "use client";
 
 import Link from "next/link";
@@ -16,8 +17,15 @@ import {
 import { uploadId } from "./actions";
 
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
-const ID_TYPES = ["Voter's card", "Driver's licence", "NIN slip", "Passport"];
+const ID_TYPES = ["Voter's card", "Driver's licence", "NIN slip", "International Passport"];
 const MAX_UPLOAD_BYTES = 3 * 1024 * 1024; // keep in sync with MAX_BYTES in actions.ts
+
+// Image rules
+const MAX_RAW_BYTES = 15 * 1024 * 1024;
+const MIN_WIDTH = 600;
+const MIN_HEIGHT = 400;
+const MIN_RATIO = 1.2;
+const MAX_RATIO = 2.2;
 
 const RULES = [
   { icon: Eye, text: "All four corners and every word are visible" },
@@ -34,6 +42,13 @@ const iconCls = "h-[18px] w-[18px] shrink-0 text-[#8c2d53]";
 function formatSize(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function getDimensions(file: File) {
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  const { width, height } = bitmap;
+  bitmap.close?.();
+  return { width, height };
 }
 
 // Shrinks a phone photo before upload so the request stays under the
@@ -61,7 +76,6 @@ async function compress(
     );
     if (!blob) return file;
 
-    // Only use the compressed version if it is actually smaller
     if (blob.size >= file.size) return file;
 
     return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", {
@@ -82,8 +96,8 @@ export default function VerifyForm() {
   const [dragging, setDragging] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [compressing, setCompressing] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Build and clean up the preview URL for the chosen image
   useEffect(() => {
     if (!file) {
       setPreview(null);
@@ -94,12 +108,42 @@ export default function VerifyForm() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  function rejectPhoto(message: string) {
+    setLocalError(message);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
   async function pick(files: FileList | null) {
     const raw = files?.[0];
     if (!raw) return;
 
     if (!ACCEPTED.includes(raw.type)) {
-      setLocalError("Use a JPG, PNG or WebP photo of your ID.");
+      rejectPhoto("Use a JPG, PNG or WebP photo of your ID.");
+      return;
+    }
+
+    if (raw.size > MAX_RAW_BYTES) {
+      rejectPhoto("That photo is too large. Choose one under 15 MB.");
+      return;
+    }
+
+    try {
+      const { width, height } = await getDimensions(raw);
+      const ratio = width / height;
+
+      if (width < MIN_WIDTH || height < MIN_HEIGHT) {
+        rejectPhoto(
+          `Photo is too small. It must be at least ${MIN_WIDTH}×${MIN_HEIGHT}px so the text is readable.`,
+        );
+        return;
+      }
+
+      if (ratio < MIN_RATIO || ratio > MAX_RATIO) {
+        rejectPhoto("Take the photo in landscape so the whole ID fits in the frame.");
+        return;
+      }
+    } catch {
+      rejectPhoto("We couldn't read that image. Try another photo.");
       return;
     }
 
@@ -108,15 +152,13 @@ export default function VerifyForm() {
     setCompressing(false);
 
     if (next.size > MAX_UPLOAD_BYTES) {
-      setLocalError("That photo is too large. Try a smaller one.");
-      if (inputRef.current) inputRef.current.value = "";
+      rejectPhoto("That photo is too large. Try a smaller one.");
       return;
     }
 
     setLocalError(null);
     setFile(next);
 
-    // Keep the real input in sync so the compressed file is what gets submitted
     if (inputRef.current) {
       const dt = new DataTransfer();
       dt.items.add(next);
@@ -130,9 +172,6 @@ export default function VerifyForm() {
     if (inputRef.current) inputRef.current.value = "";
   }
 
-  // Submit manually instead of using action={action}.
-  // React 19 resets the form after an action runs, which would clear the file
-  // input while our preview still showed the photo.
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -140,6 +179,10 @@ export default function VerifyForm() {
 
     if (!fullName.trim()) {
       setLocalError("Enter your full name as it appears on your ID.");
+      return;
+    }
+    if (!selectedId) {
+      setLocalError("Select the type of ID you are uploading.");
       return;
     }
     if (!file) {
@@ -156,7 +199,6 @@ export default function VerifyForm() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#F6E6F0]">
-      {/* page-level motif: edge circles */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -right-28 -top-28 h-80 w-80 rounded-full bg-primary/10" />
         <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/10" />
@@ -174,7 +216,6 @@ export default function VerifyForm() {
           noValidate
           className="relative space-y-7 overflow-hidden rounded-4xl bg-white p-7 shadow-xl shadow-primary/10 sm:p-10"
         >
-          {/* corner motif on the card */}
           <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-[#F6E6F0]" />
           <div aria-hidden className="pointer-events-none absolute -right-4 -top-4 h-20 w-20 rounded-full bg-[#EBC9DB]" />
 
@@ -190,7 +231,6 @@ export default function VerifyForm() {
             </p>
           </div>
 
-          {/* full name, compared against the name on the ID */}
           <label className="relative block space-y-2">
             <span className="text-sm font-semibold text-[#2B0F20]">Full name</span>
             <div className={wrap}>
@@ -209,22 +249,32 @@ export default function VerifyForm() {
             </span>
           </label>
 
-          {/* accepted ID types */}
           <div className="relative space-y-3">
             <span className="text-sm font-semibold text-[#2B0F20]">Accepted IDs</span>
+            <input type="hidden" name="idType" value={selectedId ?? ""} />
             <div className="flex flex-wrap gap-2">
-              {ID_TYPES.map((t) => (
-                <span
-                  key={t}
-                  className="rounded-full border border-[#E4C7D6] bg-[#FDF8FB] px-3.5 py-1.5 text-sm font-medium text-[#2B0F20]"
-                >
-                  {t}
-                </span>
-              ))}
+              {ID_TYPES.map((t) => {
+                const isSelected = selectedId === t;
+
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setSelectedId(t)}
+                    aria-pressed={isSelected}
+                    className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                      isSelected
+                        ? "border-[#7a2548] bg-[#7a2548] text-white"
+                        : "border-[#E4C7D6] bg-[#FDF8FB] text-[#2B0F20] hover:bg-[#F3E1EA]"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* upload area */}
           <div className="relative space-y-3">
             <span className="text-sm font-semibold text-[#2B0F20]">Photo of your ID</span>
 
@@ -265,7 +315,9 @@ export default function VerifyForm() {
                     ? "Preparing your photo..."
                     : "Tap to choose a photo, or drop it here"}
                 </span>
-                <span className="text-sm text-[#6B4A5C]">JPG, PNG or WebP</span>
+                <span className="text-sm text-[#6B4A5C]">
+                  JPG, PNG or WebP · max 3 MB · at least {MIN_WIDTH}×{MIN_HEIGHT}px, landscape
+                </span>
               </label>
             ) : (
               <div className="flex items-center gap-4 rounded-2xl border-2 border-primary bg-[#FDF8FB] p-3">
@@ -300,7 +352,6 @@ export default function VerifyForm() {
             )}
           </div>
 
-          {/* photo checklist */}
           <ul className="relative space-y-2.5 rounded-2xl bg-[#FDF8FB] p-5">
             {RULES.map((r) => (
               <li key={r.text} className="flex items-center gap-3 text-sm text-[#2B0F20]">
@@ -310,7 +361,6 @@ export default function VerifyForm() {
             ))}
           </ul>
 
-          {/* privacy note */}
           <p className="relative flex items-start gap-3 text-sm text-[#6B4A5C]">
             <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             Your ID is only used to verify you. It is never shown to clients.

@@ -78,7 +78,7 @@ export function RolePicker({ defaultName }: { defaultName: string }) {
         </p>
       )}
 
-      <div className="mt-auto pt-8 md:mt-8 md:flex md:justify-center">
+      <div className="mt-auto pt-4 md:mt-3 md:flex md:justify-center">
         <button
           type="button"
           onClick={handleContinue}
